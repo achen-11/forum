@@ -1,0 +1,158 @@
+// @k-url /api/forum/auth/{action}
+
+import { login, logout, sendVerificationCode, verifyVerificationCode, register, resetPassword, getCurrentUser, getUserDetail } from "code/Services/auth";
+import { successResponse, failResponse } from "code/Utils/ResponseUtils";
+
+/**
+ * 登录
+ * 支持：用户名/手机号/邮箱 + 密码 或 验证码
+ */
+k.api.post('login', (body: {
+  account?: string;
+  password?: string;
+  verificationCode?: string;
+  loginMode?: 'password' | 'code';
+  isRemember?: boolean;
+}) => {
+  try {
+    const data = login({
+      account: body.account ?? '',
+      password: body.password,
+      verificationCode: body.verificationCode,
+      loginMode: body.loginMode ?? 'password',
+      isRemember: body.isRemember
+    });
+    return successResponse(data);
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 发送验证码
+ */
+k.api.post('send-code', (body: {
+  account?: string;
+  accountType?: 'phone' | 'email';
+  codeType?: 'login' | 'register' | 'forgot';
+}) => {
+  try {
+    const data = sendVerificationCode({
+      account: body.account ?? '',
+      accountType: body.accountType ?? 'phone',
+      codeType: body.codeType ?? 'login'
+    });
+    return successResponse(data);
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 验证验证码
+ */
+k.api.post('verify-code', (body: {
+  account?: string;
+  accountType?: 'phone' | 'email';
+  code?: string;
+}) => {
+  try {
+    verifyVerificationCode({
+      account: body.account ?? '',
+      accountType: body.accountType ?? 'phone',
+      code: body.code ?? ''
+    });
+    return successResponse(null, '验证码验证成功');
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 注册
+ */
+k.api.post('register', (body: {
+  userName?: string;
+  phone?: string;
+  email?: string;
+  password?: string;
+  verificationCode?: string;
+  accountType?: 'username' | 'phone' | 'email';
+}) => {
+  try {
+    const data = register({
+      userName: body.userName,
+      phone: body.phone,
+      email: body.email,
+      password: body.password ?? '',
+      verificationCode: body.verificationCode ?? '',
+      accountType: body.accountType ?? 'username'
+    });
+    return successResponse(data);
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 重置密码
+ */
+k.api.post('reset-password', (body: {
+  account?: string;
+  accountType?: 'phone' | 'email' | 'username';
+  newPassword?: string;
+  verificationCode?: string;
+}) => {
+  try {
+    resetPassword({
+      account: body.account ?? '',
+      accountType: body.accountType ?? 'phone',
+      newPassword: body.newPassword ?? '',
+      verificationCode: body.verificationCode ?? ''
+    });
+    return successResponse(null, '密码重置成功');
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 退出登录
+ */
+k.api.post('logout', () => {
+  try {
+    logout();
+    return successResponse(null, '已退出');
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 获取当前用户信息
+ */
+k.api.get('me', () => {
+  try {
+    const user = getCurrentUser();
+    return successResponse(user);
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 获取用户详情
+ */
+k.api.get('user-detail', (query: {
+  userId?: string;
+}) => {
+  try {
+    if (!query.userId) {
+      return failResponse('缺少用户ID');
+    }
+    const user = getUserDetail(query.userId);
+    return successResponse(user);
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
