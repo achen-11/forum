@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, { AxiosRequestConfig } from 'axios'
 
 export interface ApiResponse<T> {
   code: number
@@ -35,12 +35,26 @@ request.interceptors.request.use(
 
 // 响应拦截器 - 统一处理响应格式
 request.interceptors.response.use(
-  <T>(response: AxiosResponse<ApiResponse<T>>) => {
-    const { code, data, message } = response.data
+  (response) => {
+    const data = response.data
+    // 兼容 Kooboo 可能返回字符串的情况
+    if (typeof data === 'string') {
+      try {
+        const parsed = JSON.parse(data)
+        if (parsed.code !== 200) {
+          throw new Error(parsed.message || '请求失败')
+        }
+        return parsed.data
+      } catch (e) {
+        throw new Error('响应解析失败')
+      }
+    }
+    
+    const { code, message } = data
     if (code !== 200) {
       throw new Error(message || '请求失败')
     }
-    return data
+    return data.data
   },
   (error) => {
     // 处理网络错误
@@ -52,16 +66,16 @@ request.interceptors.response.use(
 // 封装请求方法
 export const http = {
   get: <T>(url: string, config?: AxiosRequestConfig) =>
-    request.get<ApiResponse<T>>(url, config).then((res) => res.data),
+    request.get(url, config) as Promise<T>,
 
   post: <T>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
-    request.post<ApiResponse<T>>(url, data, config).then((res) => res.data),
+    request.post(url, data, config) as Promise<T>,
 
   put: <T>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
-    request.put<ApiResponse<T>>(url, data, config).then((res) => res.data),
+    request.put(url, data, config) as Promise<T>,
 
   delete: <T>(url: string, config?: AxiosRequestConfig) =>
-    request.delete<ApiResponse<T>>(url, config).then((res) => res.data),
+    request.delete(url, config) as Promise<T>,
 }
 
 export default request

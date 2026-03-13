@@ -33,27 +33,25 @@ export default function LoginPage() {
     setCodeSending(true)
     try {
       const codeType = pageMode === 'login' ? 'login' : pageMode === 'register' ? 'register' : 'forgot'
-      const res = await authApi.sendCode({
+      await authApi.sendCode({
         account,
         accountType: accountType as 'phone' | 'email',
         codeType,
       })
-      if (res.code === 200) {
-        setCodeCountdown(60)
-        const timer = setInterval(() => {
-          setCodeCountdown((c) => {
-            if (c <= 1) {
-              clearInterval(timer)
-              return 0
-            }
-            return c - 1
-          })
-        }, 1000)
-      } else {
-        alert(res.message)
-      }
-    } catch {
-      alert('发送失败')
+      // 成功，发送验证码
+      setCodeCountdown(60)
+      const timer = setInterval(() => {
+        setCodeCountdown((c) => {
+          if (c <= 1) {
+            clearInterval(timer)
+            return 0
+          }
+          return c - 1
+        })
+      }, 1000)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '发送失败'
+      alert(message)
     } finally {
       setCodeSending(false)
     }
@@ -97,23 +95,21 @@ export default function LoginPage() {
         return
       }
       try {
-        const res = await authApi.resetPassword({
+        await authApi.resetPassword({
           account,
           accountType: accountType as 'phone' | 'email' | 'username',
           newPassword: password,
           verificationCode: code,
         })
-        if (res.code === 200) {
-          setResetSuccess(true)
-          setTimeout(() => {
-            setPageMode('login')
-            setResetSuccess(false)
-          }, 2000)
-        } else {
-          alert(res.message)
-        }
-      } catch (err: any) {
-        alert(err.message || '重置失败')
+        // 成功
+        setResetSuccess(true)
+        setTimeout(() => {
+          setPageMode('login')
+          setResetSuccess(false)
+        }, 2000)
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : '重置失败'
+        alert(message)
       }
     }
   }, [account, password, confirmPassword, code, loginMode, pageMode, login, register, navigate, clearError])
