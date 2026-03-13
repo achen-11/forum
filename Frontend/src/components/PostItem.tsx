@@ -32,7 +32,6 @@ export function PostItem({ post, onClick }: PostItemProps) {
         {post.isPinned && (
           <div className="flex items-center gap-1 text-emerald-500 text-xs font-medium bg-emerald-50 px-2 py-1 rounded">
             <Pin className="w-3 h-3" />
-            置顶
           </div>
         )}
 
