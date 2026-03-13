@@ -1,3 +1,4 @@
+import { http } from '@/lib/request'
 import type {
   LoginRequest,
   LoginResponse,
@@ -5,64 +6,28 @@ import type {
   SendCodeResponse,
   RegisterRequest,
   UserInfo,
-  ApiResponse
 } from '@/types/auth'
 
 const API_BASE = '/api/forum/auth'
-
-function getAuthHeaders(): HeadersInit {
-  // 从 cookie 中读取 token
-  const cookies = document.cookie.split('; ')
-  for (const cookie of cookies) {
-    if (cookie.startsWith('forum_auth_token=')) {
-      const token = cookie.split('=')[1]
-      if (token) {
-        return { Authorization: `Bearer ${token}` }
-      }
-    }
-  }
-  return {}
-}
-
-async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
-      ...options?.headers,
-    },
-  })
-  return response.json()
-}
 
 export const authApi = {
   /**
    * 登录
    */
   login: (data: LoginRequest) =>
-    request<ApiResponse<LoginResponse>>(`${API_BASE}/login`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    http.post<LoginResponse>(`${API_BASE}/login`, data),
 
   /**
    * 发送验证码
    */
   sendCode: (data: SendCodeRequest) =>
-    request<ApiResponse<SendCodeResponse>>(`${API_BASE}/send-code`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    http.post<SendCodeResponse>(`${API_BASE}/send-code`, data),
 
   /**
    * 注册
    */
   register: (data: RegisterRequest) =>
-    request<ApiResponse<LoginResponse>>(`${API_BASE}/register`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    http.post<LoginResponse>(`${API_BASE}/register`, data),
 
   /**
    * 重置密码
@@ -73,28 +38,23 @@ export const authApi = {
     newPassword: string
     verificationCode: string
   }) =>
-    request<ApiResponse<null>>(`${API_BASE}/reset-password`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    http.post<null>(`${API_BASE}/reset-password`, data),
 
   /**
    * 退出登录
    */
   logout: () =>
-    request<ApiResponse<null>>(`${API_BASE}/logout`, {
-      method: 'POST',
-    }),
+    http.post<null>(`${API_BASE}/logout`, {}),
 
   /**
    * 获取当前用户信息
    */
   getCurrentUser: () =>
-    request<ApiResponse<UserInfo>>(`${API_BASE}/me`),
+    http.get<UserInfo>(`${API_BASE}/me`),
 
   /**
    * 获取用户详情
    */
   getUserDetail: (userId: string) =>
-    request<ApiResponse<UserInfo>>(`${API_BASE}/user-detail?userId=${userId}`),
+    http.get<UserInfo>(`${API_BASE}/user-detail?userId=${userId}`),
 }
