@@ -10,11 +10,26 @@ import type {
 
 const API_BASE = '/api/forum/auth'
 
+function getAuthHeaders(): HeadersInit {
+  // 从 cookie 中读取 token
+  const cookies = document.cookie.split('; ')
+  for (const cookie of cookies) {
+    if (cookie.startsWith('forum_auth_token=')) {
+      const token = cookie.split('=')[1]
+      if (token) {
+        return { Authorization: `Bearer ${token}` }
+      }
+    }
+  }
+  return {}
+}
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthHeaders(),
       ...options?.headers,
     },
   })

@@ -23,7 +23,7 @@ export interface UserInfo {
   userName?: string
   phone?: string
   email?: string
-  nickname?: string
+  displayName?: string
   avatar?: string
 }
 

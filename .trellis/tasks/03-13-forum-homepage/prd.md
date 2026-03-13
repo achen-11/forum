@@ -4,6 +4,11 @@
 
 开发论坛首页，支持分类筛选和帖子列表展示，采用两栏布局（左侧分类选择器 + 右侧帖子列表）。
 
+## Subtasks
+
+- [ ] `03-13-forum-homepage-frontend` - 前端页面开发
+- [ ] `03-13-forum-homepage-backend` - 后端 API 开发
+
 ## Requirements
 
 ### 功能需求
@@ -46,43 +51,22 @@
 
 ## Technical Approach
 
-### 前端
+### 前端 (forum-homepage-frontend)
 
-- 创建 `HomePage.tsx` 改为论坛首页布局
-- 创建 `CategorySidebar` 组件（左侧分类）
-- 创建 `PostList` 组件（右侧列表）
-- 创建 `PostItem` 组件（帖子列表项）
 - 创建 `types/post.ts` 定义帖子类型
 - 创建 `api/post.ts` 定义帖子 API
-- 使用 Zustand 创建 `postStore` 管理帖子和分类状态
+- 使用 Zustand 创建 `stores/postStore.ts` 管理帖子和分类状态
+- 创建 `components/CategorySidebar.tsx` 左侧分类组件
+- 创建 `components/PostList.tsx` 右侧列表组件
+- 创建 `components/PostItem.tsx` 帖子列表项组件
+- 更新 `pages/HomePage.tsx` 为论坛首页布局
 
-### 后端
+### 后端 (forum-homepage-backend)
 
-- 创建 `Models/Forum_Category.ts` 分类数据模型（如果尚未创建）
 - 创建 `Services/ForumPostService.ts` 帖子相关服务
 - 创建 `api/forum/post.ts` 帖子 API 接口
-
-### 数据模型
-
-Forum_Post 已有字段：
-- title: 标题
-- content: 内容
-- summary: 摘要
-- isTop: 是否置顶
-- isEssence: 是否精华
-- categoryId: 分类ID
-- authorId: 作者ID
-- viewCount: 浏览数
-- likeCount: 点赞数
-- replyCount: 评论数
-- createdAt: 创建时间
-- updatedAt: 更新时间
-
-Forum_Category 已有字段：
-- name: 分类名称
-- description: 描述
-- icon: 图标
-- sortOrder: 排序
+- 实现分类列表 API
+- 实现帖子列表 API（支持分类筛选、置顶排序）
 
 ## Out of Scope
 
@@ -90,7 +74,7 @@ Forum_Category 已有字段：
 - 帖子详情页（后续任务）
 - 点赞/收藏功能（后续任务）
 - 搜索功能（后续任务）
-- 分页加载（当前先做无限滚动或简单加载）
+- 分页加载（当前先做简单加载）
 
 ## Technical Notes
 

@@ -22,11 +22,18 @@ const Forum_Post = ksql.define(
             ref: { tableName: 'Forum_Category', fieldName: '_id' },
             index: true
         },
+        summary: {
+            type: DataTypes.String
+        },
         viewCount: {
             type: DataTypes.Number,
             default: 0
         },
         replyCount: {
+            type: DataTypes.Number,
+            default: 0
+        },
+        likeCount: {
             type: DataTypes.Number,
             default: 0
         },
