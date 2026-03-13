@@ -1,7 +1,7 @@
 {
-  "id": "forum-auth",
-  "name": "forum-auth",
-  "title": "论坛 Auth API 开发",
+  "id": "forum-frontend",
+  "name": "forum-frontend",
+  "title": "论坛前端页面开发",
   "description": "",
   "status": "planning",
   "dev_type": null,

@@ -260,7 +260,11 @@ export function register(body: {
     const pwd = password.trim()
     if (pwd.length < 6) throw new Error('密码长度至少6位')
     if (pwd.length > 20) throw new Error('密码长度不能超过20位')
-    if (!verificationCode.trim()) throw new Error('请输入验证码')
+
+    // 用户名注册不需要验证码
+    if (accountType !== 'username') {
+        if (!verificationCode?.trim()) throw new Error('请输入验证码')
+    }
 
     // 验证账号格式
     let normalizedAccount = ''
@@ -281,15 +285,17 @@ export function register(body: {
         normalizedAccount = userName.trim()
     }
 
-    // 验证验证码
-    const key = cacheKey(accountType, normalizedAccount)
-    const stored = k.cache.get(key)
-    if (!stored || stored !== verificationCode.trim()) {
-        throw new Error('验证码错误或已过期')
-    }
-    // 验证成功后删除验证码
-    if (ENV.VERIFY_CODE_ONE_TIME) {
-        k.cache.remove(key)
+    // 验证码验证 - 用户名注册不需要
+    if (accountType !== 'username') {
+        const key = cacheKey(accountType, normalizedAccount)
+        const stored = k.cache.get(key)
+        if (!stored || stored !== verificationCode.trim()) {
+            throw new Error('验证码错误或已过期')
+        }
+        // 验证成功后删除验证码
+        if (ENV.VERIFY_CODE_ONE_TIME) {
+            k.cache.remove(key)
+        }
     }
 
     // 检查账号是否已存在
