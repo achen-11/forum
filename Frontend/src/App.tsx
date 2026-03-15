@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { Toaster } from 'sonner'
 import { useAuthStore } from './stores/authStore'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
@@ -53,6 +54,7 @@ export default function App() {
 
   return (
     <HashRouter>
+      <Toaster position="top-center" />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route

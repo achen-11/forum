@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useAuthStore } from '@/stores/authStore'
 import { authApi } from '@/api/auth'
+import { toast } from '@/lib/toast'
 import { MessageCircle, Mail, Phone, Lock, User, ArrowLeft } from 'lucide-react'
 
 type PageMode = 'login' | 'register' | 'forgot'
@@ -51,7 +52,7 @@ export default function LoginPage() {
       }, 1000)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '发送失败'
-      alert(message)
+      toast.error(message)
     } finally {
       setCodeSending(false)
     }
@@ -74,7 +75,7 @@ export default function LoginPage() {
     } else if (pageMode === 'register') {
       // 注册
       if (password !== confirmPassword) {
-        alert('两次密码输入不一致')
+        toast.warning('两次密码输入不一致')
         return
       }
       const success = await register({
@@ -91,7 +92,7 @@ export default function LoginPage() {
     } else if (pageMode === 'forgot') {
       // 忘记密码
       if (password !== confirmPassword) {
-        alert('两次密码输入不一致')
+        toast.warning('两次密码输入不一致')
         return
       }
       try {
@@ -109,7 +110,7 @@ export default function LoginPage() {
         }, 2000)
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : '重置失败'
-        alert(message)
+        toast.error(message)
       }
     }
   }, [account, password, confirmPassword, code, loginMode, pageMode, login, register, navigate, clearError])

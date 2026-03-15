@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { MessageCircle, Heart, Pin } from 'lucide-react'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import type { Post } from '@/types/post'
 
 interface PostItemProps {
@@ -57,16 +58,26 @@ export function PostItem({ post, onClick }: PostItemProps) {
                   to={`/user/${post.author._id}`}
                   className="flex items-center gap-1.5 hover:text-slate-600"
                 >
-                  <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-medium text-xs">
-                    {post.author?.userName?.charAt(0).toUpperCase() || 'U'}
-                  </div>
+                  <Avatar className="w-5 h-5">
+                    {post.author?.avatar ? (
+                      <AvatarImage src={post.author.avatar} alt="" />
+                    ) : null}
+                    <AvatarFallback className="bg-slate-200 text-slate-500 text-xs">
+                      {(post.author?.userName || post.author?.displayName || '?').slice(0, 1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <span>{post.author?.userName || post.author?.displayName || '匿名用户'}</span>
                 </Link>
               ) : (
                 <>
-                  <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-medium text-xs">
-                    {post.author?.userName?.charAt(0).toUpperCase() || 'U'}
-                  </div>
+                  <Avatar className="w-5 h-5">
+                    {post.author?.avatar ? (
+                      <AvatarImage src={post.author.avatar} alt="" />
+                    ) : null}
+                    <AvatarFallback className="bg-slate-200 text-slate-500 text-xs">
+                      {(post.author?.userName || post.author?.displayName || '?').slice(0, 1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <span>{post.author?.userName || post.author?.displayName || '匿名用户'}</span>
                 </>
               )}

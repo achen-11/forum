@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { postApi } from '@/api/post'
 import type { Post, Reply } from '@/types/post'
 import { ArrowLeft, Eye, MessageCircle, Clock, Send, ArrowUpDown } from 'lucide-react'
@@ -168,6 +168,9 @@ export default function PostDetailPage() {
             {post.author?._id ? (
               <Link to={`/user/${post.author._id}`} className="flex items-center gap-3 hover:opacity-80">
                 <Avatar className="w-10 h-10">
+                  {post.author?.avatar ? (
+                    <AvatarImage src={post.author.avatar} alt="" />
+                  ) : null}
                   <AvatarFallback className="bg-slate-200 text-slate-600">
                     {getInitials(post.author?.displayName || post.author?.userName)}
                   </AvatarFallback>
@@ -185,6 +188,9 @@ export default function PostDetailPage() {
             ) : (
               <>
                 <Avatar className="w-10 h-10">
+                  {post.author?.avatar ? (
+                    <AvatarImage src={post.author.avatar} alt="" />
+                  ) : null}
                   <AvatarFallback className="bg-slate-200 text-slate-600">
                     {getInitials(post.author?.displayName || post.author?.userName)}
                   </AvatarFallback>
@@ -263,6 +269,9 @@ export default function PostDetailPage() {
                   {reply.author?._id ? (
                     <Link to={`/user/${reply.author._id}`} className="shrink-0">
                       <Avatar className="w-8 h-8 hover:opacity-80">
+                        {reply.author?.avatar ? (
+                          <AvatarImage src={reply.author.avatar} alt="" />
+                        ) : null}
                         <AvatarFallback className="bg-slate-200 text-slate-600 text-sm">
                           {getInitials(reply.author?.displayName || reply.author?.userName)}
                         </AvatarFallback>
@@ -270,6 +279,9 @@ export default function PostDetailPage() {
                     </Link>
                   ) : (
                     <Avatar className="w-8 h-8 shrink-0">
+                      {reply.author?.avatar ? (
+                        <AvatarImage src={reply.author.avatar} alt="" />
+                      ) : null}
                       <AvatarFallback className="bg-slate-200 text-slate-600 text-sm">
                         {getInitials(reply.author?.displayName || reply.author?.userName)}
                       </AvatarFallback>

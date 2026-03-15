@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useAuthStore } from '@/stores/authStore'
 import { postApi } from '@/api/post'
+import { toast } from '@/lib/toast'
 import { PostItem } from '@/components/PostItem'
 import type { Post } from '@/types/post'
 import type { UserInfo } from '@/types/auth'
@@ -61,13 +62,13 @@ export default function ProfilePage() {
 
     // 验证文件类型
     if (!file.type.startsWith('image/')) {
-      alert('请上传图片文件')
+      toast.error('请上传图片文件')
       return
     }
 
     // 验证文件大小（2MB）
     if (file.size > 2 * 1024 * 1024) {
-      alert('图片大小不能超过 2MB')
+      toast.error('图片大小不能超过 2MB')
       return
     }
 
@@ -79,7 +80,7 @@ export default function ProfilePage() {
       const previewUrl = URL.createObjectURL(file)
       setAvatarPreview(previewUrl)
     } catch (err) {
-      alert(err instanceof Error ? err.message : '上传失败')
+      toast.error(err instanceof Error ? err.message : '上传失败')
     } finally {
       setUploadLoading(false)
       // 清空 input 以便重复选择同一文件
@@ -106,7 +107,7 @@ export default function ProfilePage() {
       })
       setEditOpen(false)
     } catch (err) {
-      alert(err instanceof Error ? err.message : '更新失败')
+      toast.error(err instanceof Error ? err.message : '更新失败')
     } finally {
       setSubmitLoading(false)
     }
