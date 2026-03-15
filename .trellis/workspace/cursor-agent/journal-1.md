@@ -77,3 +77,62 @@
 ### Next Steps
 
 - None - task complete
+
+---
+
+## Session 2: 论坛发帖和详情页功能开发
+
+**Date**: 2026-03-15
+**Task**: 发帖功能和帖子详情页
+
+### Summary
+
+实现发帖功能（TipTap 富文本编辑器 + 图片上传）、帖子详情页、评论功能
+
+### Main Changes
+
+#### 完成功能
+
+- 发帖页面 (`/post/new`) - TipTap 富文本编辑器，支持粘贴上传图片
+- 发帖 API (`POST /api/forum/post/create`)
+- 帖子详情页 (`/post/:id`) - 显示帖子内容、阅读数、评论
+- 帖子详情 API (`GET /api/forum/post/detail`)
+- 评论功能 - 支持发表评论、排序切换（最新/最早）
+- 评论 API (`POST /api/forum/reply/create`, `GET /api/forum/reply/list`)
+- 图片上传 API (`POST /api/forum/post/upload/image`)
+
+### 新增/修改文件
+
+#### 后端
+- `src/code/Services/ForumPostService.ts` - 添加 createPost, getPostDetail, createReply, getReplyList 方法
+- `src/api/forum/post.ts` - 添加 create, detail, reply/create, reply/list, upload/image 接口
+
+#### 前端
+- `Frontend/src/pages/CreatePostPage.tsx` - 发帖页面
+- `Frontend/src/pages/PostDetailPage.tsx` - 帖子详情页
+- `Frontend/src/api/post.ts` - 添加 createPost, getPostDetail, createReply, getReplyList, uploadImage 方法
+- `Frontend/src/types/post.ts` - 添加 Reply 类型和相关 API 类型
+- `Frontend/src/App.tsx` - 添加 /post/new 和 /post/:id 路由
+- `Frontend/package.json` - 添加 @tiptap/react, @tiptap/starter-kit, @tiptap/extension-image, @tiptap/extension-placeholder
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2527258` | feat: 新增发帖功能 |
+| `b7a5d49` | fix: 修复评论创建后返回数据缺少 author 信息 |
+
+### Testing
+
+- [OK] 前端构建通过
+- [OK] 后端验证通过 (0 blockers)
+- [OK] API 测试全部通过 (curl 验证)
+- [OK] 手动测试验收通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

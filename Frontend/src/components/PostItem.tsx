@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { MessageCircle, Heart, Pin } from 'lucide-react'
 import type { Post } from '@/types/post'
 
@@ -50,11 +51,25 @@ export function PostItem({ post, onClick }: PostItemProps) {
           {/* 元信息 */}
           <div className="mt-3 flex items-center gap-4 text-xs text-slate-400">
             {/* 作者 */}
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-medium text-xs">
-                {post.author?.userName?.charAt(0).toUpperCase() || 'U'}
-              </div>
-              <span>{post.author?.userName || post.author?.displayName || '匿名用户'}</span>
+            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              {post.author?._id ? (
+                <Link
+                  to={`/user/${post.author._id}`}
+                  className="flex items-center gap-1.5 hover:text-slate-600"
+                >
+                  <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-medium text-xs">
+                    {post.author?.userName?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <span>{post.author?.userName || post.author?.displayName || '匿名用户'}</span>
+                </Link>
+              ) : (
+                <>
+                  <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-medium text-xs">
+                    {post.author?.userName?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <span>{post.author?.userName || post.author?.displayName || '匿名用户'}</span>
+                </>
+              )}
             </div>
 
             {/* 发布时间 */}

@@ -1,6 +1,6 @@
 // @k-url /api/forum/auth/{action}
 
-import { login, logout, sendVerificationCode, verifyVerificationCode, register, resetPassword, getCurrentUser, getUserDetail } from "code/Services/auth";
+import { login, logout, sendVerificationCode, verifyVerificationCode, register, resetPassword, getCurrentUser, getUserDetail, updateProfile } from "code/Services/auth";
 import { successResponse, failResponse } from "code/Utils/ResponseUtils";
 
 /**
@@ -142,16 +142,35 @@ k.api.get('me', () => {
 
 /**
  * 获取用户详情
+ * 使用 k.request.get('userId') 获取查询参数，避免回调参数在 Kooboo 中为 null
  */
-k.api.get('user-detail', (query: {
-  userId?: string;
-}) => {
+k.api.get('user-detail', () => {
   try {
-    if (!query.userId) {
+    const userId = k.request.get('userId')
+    if (!userId) {
       return failResponse('缺少用户ID');
     }
-    const user = getUserDetail(query.userId);
+    const user = getUserDetail(userId);
     return successResponse(user);
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 更新当前用户资料（仅 displayName、avatar）
+ * 需登录，仅能更新本人。
+ */
+k.api.post('update-profile', (body: {
+  displayName?: string;
+  avatar?: string;
+}) => {
+  try {
+    const user = updateProfile({
+      displayName: body.displayName,
+      avatar: body.avatar
+    });
+    return successResponse(user, '更新成功');
   } catch (e: any) {
     return failResponse(e?.message || '服务器错误');
   }

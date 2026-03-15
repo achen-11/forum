@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { postApi } from '@/api/post'
@@ -165,20 +165,41 @@ export default function PostDetailPage() {
 
           {/* 作者信息 */}
           <div className="flex items-center gap-3 mb-6 pb-6 border-b border-slate-100">
-            <Avatar className="w-10 h-10">
-              <AvatarFallback className="bg-slate-200 text-slate-600">
-                {getInitials(post.author?.displayName || post.author?.userName)}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="font-medium text-slate-900">
-                {post.author?.displayName || post.author?.userName || '未知用户'}
-              </div>
-              <div className="text-sm text-slate-500 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {formatTime(post.createdAt)}
-              </div>
-            </div>
+            {post.author?._id ? (
+              <Link to={`/user/${post.author._id}`} className="flex items-center gap-3 hover:opacity-80">
+                <Avatar className="w-10 h-10">
+                  <AvatarFallback className="bg-slate-200 text-slate-600">
+                    {getInitials(post.author?.displayName || post.author?.userName)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-medium text-slate-900">
+                    {post.author?.displayName || post.author?.userName || '未知用户'}
+                  </div>
+                  <div className="text-sm text-slate-500 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {formatTime(post.createdAt)}
+                  </div>
+                </div>
+              </Link>
+            ) : (
+              <>
+                <Avatar className="w-10 h-10">
+                  <AvatarFallback className="bg-slate-200 text-slate-600">
+                    {getInitials(post.author?.displayName || post.author?.userName)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-medium text-slate-900">
+                    {post.author?.displayName || post.author?.userName || '未知用户'}
+                  </div>
+                  <div className="text-sm text-slate-500 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {formatTime(post.createdAt)}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* 帖子内容 */}
@@ -239,16 +260,35 @@ export default function PostDetailPage() {
                   key={reply._id}
                   className="flex gap-3 p-4 bg-slate-50 rounded-lg"
                 >
-                  <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-slate-200 text-slate-600 text-sm">
-                      {getInitials(reply.author?.displayName || reply.author?.userName)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
+                  {reply.author?._id ? (
+                    <Link to={`/user/${reply.author._id}`} className="shrink-0">
+                      <Avatar className="w-8 h-8 hover:opacity-80">
+                        <AvatarFallback className="bg-slate-200 text-slate-600 text-sm">
+                          {getInitials(reply.author?.displayName || reply.author?.userName)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Link>
+                  ) : (
+                    <Avatar className="w-8 h-8 shrink-0">
+                      <AvatarFallback className="bg-slate-200 text-slate-600 text-sm">
+                        {getInitials(reply.author?.displayName || reply.author?.userName)}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-slate-900 text-sm">
-                        {reply.author?.displayName || reply.author?.userName || '未知用户'}
-                      </span>
+                      {reply.author?._id ? (
+                        <Link
+                          to={`/user/${reply.author._id}`}
+                          className="font-medium text-slate-900 text-sm hover:underline"
+                        >
+                          {reply.author?.displayName || reply.author?.userName || '未知用户'}
+                        </Link>
+                      ) : (
+                        <span className="font-medium text-slate-900 text-sm">
+                          {reply.author?.displayName || reply.author?.userName || '未知用户'}
+                        </span>
+                      )}
                       <span className="text-xs text-slate-400">
                         {formatTime(reply.createdAt)}
                       </span>

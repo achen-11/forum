@@ -57,4 +57,10 @@ export const authApi = {
    */
   getUserDetail: (userId: string) =>
     http.get<UserInfo>(`${API_BASE}/user-detail?userId=${userId}`),
+
+  /**
+   * 更新当前用户资料（displayName、avatar）
+   */
+  updateProfile: (data: { displayName?: string; avatar?: string }) =>
+    http.post<UserInfo>(`${API_BASE}/update-profile`, data),
 }

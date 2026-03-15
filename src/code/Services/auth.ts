@@ -497,3 +497,29 @@ export function getUserDetail(userId: string) {
         lastLoginAt: user.lastLoginAt
     }
 }
+
+/**
+ * 更新当前登录用户资料（仅 displayName、avatar）
+ * 必须已登录，仅能更新本人。
+ */
+export function updateProfile(updates: { displayName?: string; avatar?: string }) {
+    const user = getCurrentUser()
+    if (!user || !user._id) {
+        throw new Error('请先登录')
+    }
+    const payload: Record<string, unknown> = {}
+    if (updates.displayName !== undefined) {
+        const trimmed = (updates.displayName || '').trim()
+        if (trimmed.length > 50) throw new Error('昵称长度不能超过50')
+        payload.displayName = trimmed || user.displayName
+    }
+    if (updates.avatar !== undefined) {
+        payload.avatar = typeof updates.avatar === 'string' ? updates.avatar.trim() : ''
+    }
+    if (Object.keys(payload).length === 0) {
+        return getUserDetail(user._id)
+    }
+    const updated = Forum_User.updateById(user._id, payload as any)
+    if (!updated) throw new Error('更新失败')
+    return getCurrentUser()
+}

@@ -13,6 +13,7 @@ interface AuthState {
   login: (data: LoginRequest) => Promise<boolean>
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
+  updateProfile: (data: { displayName?: string; avatar?: string }) => Promise<void>
   clearError: () => void
   register: (data: {
     userName?: string
@@ -88,6 +89,15 @@ export const useAuthStore = create<AuthState>()(
           set({ user: null, token: null, isAuthenticated: false })
         } finally {
           set({ isLoading: false })
+        }
+      },
+
+      updateProfile: async (data) => {
+        try {
+          const user = await authApi.updateProfile(data)
+          set({ user })
+        } catch (error: unknown) {
+          throw error
         }
       },
 

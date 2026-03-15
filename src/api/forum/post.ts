@@ -20,12 +20,13 @@ k.api.get('categories', () => {
 
 /**
  * 获取帖子列表
- * 支持 categoryId 参数筛选
+ * 支持 categoryId、authorId 参数筛选（authorId 用于个人中心「我的帖子」）
  */
 k.api.get('list', () => {
     try {
         const categoryId = k.request.get('categoryId') || undefined
-        const posts = ForumPostService.getPostList(categoryId)
+        const authorId = k.request.get('authorId') || undefined
+        const posts = ForumPostService.getPostList(categoryId, authorId)
         return successResponse({ posts })
     } catch (e: any) {
         return failResponse(e?.message || '获取帖子列表失败')

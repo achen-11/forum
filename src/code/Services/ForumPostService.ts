@@ -26,12 +26,16 @@ export class ForumPostService {
     /**
      * 获取帖子列表
      * @param categoryId 可选的分类 ID
+     * @param authorId 可选的作者 ID（用于个人中心「我的帖子」）
      */
-    static getPostList(categoryId?: string) {
+    static getPostList(categoryId?: string, authorId?: string) {
         // 构建查询条件
         const where: Record<string, unknown> = {}
         if (categoryId) {
             where.categoryId = categoryId
+        }
+        if (authorId) {
+            where.authorId = authorId
         }
 
         // 查询帖子

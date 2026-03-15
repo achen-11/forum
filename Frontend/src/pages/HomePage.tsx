@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/authStore'
 import { usePostStore } from '@/stores/postStore'
@@ -43,9 +43,12 @@ export default function HomePage() {
                 <Plus className="w-4 h-4" />
                 发帖
               </Button>
-              <span className="text-sm text-slate-600 hidden sm:block">
+              <Link
+                to="/profile"
+                className="text-sm text-slate-600 hidden sm:block hover:text-slate-900 hover:underline"
+              >
                 {user?.displayName || user?.userName || '用户'}
-              </span>
+              </Link>
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 退出
               </Button>
