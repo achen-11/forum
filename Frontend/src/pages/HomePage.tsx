@@ -1,76 +1,176 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useAuthStore } from '@/stores/authStore'
 import { usePostStore } from '@/stores/postStore'
-import { CategorySidebar } from '@/components/CategorySidebar'
+import { HomeSidebar } from '@/components/HomeSidebar'
 import { PostList } from '@/components/PostList'
-import { Plus } from 'lucide-react'
+import { Plus, Bell, ChevronDown } from 'lucide-react'
+
+type SortOption = 'recent' | 'popular' | 'unanswered'
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
+  const { user } = useAuthStore()
   const { categories, selectedCategoryId, fetchCategories, fetchPosts, setSelectedCategory } = usePostStore()
+  const [sortBy, setSortBy] = useState<SortOption>('recent')
+  const [showUserMenu, setShowUserMenu] = useState(false)
 
   useEffect(() => {
     fetchCategories()
     fetchPosts()
   }, [fetchCategories, fetchPosts])
 
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#f6f6f8]">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-slate-900">内部论坛</h1>
-            </div>
+      <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2 text-indigo-600">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">F</span>
+              </div>
+              <h1 className="text-xl font-bold text-slate-900 hidden sm:block">Kooboo Forum</h1>
+            </Link>
+          </div>
 
-            {/* Right */}
-            <div className="flex items-center gap-4">
-              <Button
-                size="sm"
-                className="gap-1.5 bg-slate-900 hover:bg-slate-800"
-                onClick={() => navigate('/post/new')}
+          {/* Search Placeholder */}
+          <div className="hidden md:flex relative w-64 lg:w-96">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </span>
+            <input
+              placeholder="搜索讨论、标签或用户..."
+              className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
+            />
+          </div>
+
+          {/* Right */}
+          <div className="flex items-center gap-3">
+            {/* Notifications */}
+            <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg relative">
+              <Bell className="w-5 h-5" />
+            </button>
+
+            <div className="h-6 w-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
+
+            {/* User Menu */}
+            <div className="relative flex items-center gap-3 pl-1">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-semibold">{user?.displayName || user?.userName || '用户'}</p>
+              </div>
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-1 hover:bg-slate-100 rounded-lg p-1"
               >
-                <Plus className="w-4 h-4" />
-                发帖
-              </Button>
-              <Link
-                to="/profile"
-                className="text-sm text-slate-600 hidden sm:block hover:text-slate-900 hover:underline"
-              >
-                {user?.displayName || user?.userName || '用户'}
-              </Link>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                退出
-              </Button>
+                <Avatar className="w-8 h-8">
+                  {user?.avatar ? (
+                    <AvatarImage src={user.avatar} alt="" />
+                  ) : null}
+                  <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm">
+                    {(user?.displayName || user?.userName || '?').slice(0, 1).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <ChevronDown className="w-4 h-4 text-slate-400" />
+              </button>
+
+              {/* Dropdown Menu */}
+              {showUserMenu && (
+                <div className="absolute right-0 top-full mt-2 bg-white rounded-lg shadow-lg border border-slate-200 py-2 min-w-[160px] z-50">
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    个人主页
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    设置
+                  </Link>
+                  <hr className="my-2 border-slate-100" />
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false)
+                      navigate('/login')
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full"
+                  >
+                    退出登录
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6">
-          {/* 左侧分类栏 */}
-          <CategorySidebar
+      <main className="max-w-7xl mx-auto px-4">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* 左侧边栏 */}
+          <HomeSidebar
             categories={categories}
             selectedCategoryId={selectedCategoryId}
             onSelectCategory={setSelectedCategory}
           />
 
           {/* 右侧帖子列表 */}
-          <div className="flex-1">
+          <section className="flex-1 space-y-6 my-8">
+            {/* 筛选栏 */}
+            <div className="flex items-center justify-between">
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setSortBy('recent')}
+                  className={`text-sm font-semibold pb-1 ${
+                    sortBy === 'recent'
+                      ? 'text-indigo-600 border-b-2 border-indigo-600'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  最新
+                </button>
+                <button
+                  onClick={() => setSortBy('popular')}
+                  className={`text-sm font-medium pb-1 ${
+                    sortBy === 'popular'
+                      ? 'text-indigo-600 border-b-2 border-indigo-600'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  热门
+                </button>
+                <button
+                  onClick={() => setSortBy('unanswered')}
+                  className={`text-sm font-medium pb-1 ${
+                    sortBy === 'unanswered'
+                      ? 'text-indigo-600 border-b-2 border-indigo-600'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  待回复
+                </button>
+              </div>
+              <Button
+                className="gap-1.5 bg-indigo-600 hover:bg-indigo-700"
+                onClick={() => navigate('/post/new')}
+              >
+                <Plus className="w-4 h-4" />
+                发帖
+              </Button>
+            </div>
+
+            {/* 帖子列表 */}
             <PostList />
-          </div>
+          </section>
         </div>
       </main>
     </div>

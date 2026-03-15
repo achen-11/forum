@@ -1,7 +1,7 @@
 {
-  "id": "image-features",
-  "name": "image-features",
-  "title": "brainstorm: 图片功能完善",
+  "id": "tags-feature",
+  "name": "tags-feature",
+  "title": "Tags 功能",
   "description": "",
   "status": "planning",
   "dev_type": null,

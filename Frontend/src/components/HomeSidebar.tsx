@@ -1,0 +1,95 @@
+import { Link } from 'react-router-dom'
+import { Home, MessageCircle, FileText, ChevronRight } from 'lucide-react'
+import type { Category } from '@/types/post'
+
+interface HomeSidebarProps {
+  categories: Category[]
+  selectedCategoryId: string | null
+  onSelectCategory: (categoryId: string | null) => void
+}
+
+export function HomeSidebar({ categories, selectedCategoryId, onSelectCategory }: HomeSidebarProps) {
+  return (
+    <aside className="w-60 flex-shrink-0 space-y-4 lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:overflow-y-auto">
+      {/* Navigation */}
+      <nav className="bg-white rounded-xl border border-slate-200 p-2">
+        <div className="px-3 py-2 mb-1">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">导航</span>
+        </div>
+        <Link
+          to="/"
+          className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg"
+        >
+          <Home className="w-4 h-4" />
+          首页
+        </Link>
+        <Link
+          to="/messages"
+          className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg"
+        >
+          <MessageCircle className="w-4 h-4" />
+          消息
+        </Link>
+        <Link
+          to="/profile"
+          className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg"
+        >
+          <FileText className="w-4 h-4" />
+          我的帖子
+        </Link>
+      </nav>
+
+      {/* 分类列表 */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">分类</h2>
+        <nav className="space-y-1">
+          <button
+            onClick={() => onSelectCategory(null)}
+            className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all ${
+              selectedCategoryId === null
+                ? 'bg-indigo-50 text-indigo-600 font-medium'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <ChevronRight className="w-4 h-4" />
+            <span className="flex-1 text-left">全部</span>
+          </button>
+
+          {categories.map((category) => (
+            <button
+              key={category._id}
+              onClick={() => onSelectCategory(category._id)}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all ${
+                selectedCategoryId === category._id
+                  ? 'bg-indigo-50 text-indigo-600 font-medium'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <ChevronRight className="w-4 h-4" />
+              <span className="flex-1 text-left truncate">{category.name}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Tags */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">标签</h2>
+        <div className="flex flex-wrap gap-2">
+          <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors">
+            #engineering
+          </span>
+          <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors">
+            #roadmap
+          </span>
+          <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors">
+            #culture
+          </span>
+          <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors">
+            #remote
+          </span>
+        </div>
+      </div>
+    </aside>
+  )
+}
