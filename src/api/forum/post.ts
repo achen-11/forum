@@ -326,16 +326,26 @@ k.api.post('upload/image', () => {
             return failResponse('图片大小不能超过 2MB')
         }
 
-        // 生成唯一文件名
-        const ext = (file.name || 'jpg').split('.').pop() || 'jpg'
+        // contentType 到扩展名的映射
+        const contentTypeToExt: Record<string, string> = {
+            'image/jpeg': 'jpg',
+            'image/png': 'png',
+            'image/gif': 'gif',
+            'image/webp': 'webp'
+        }
+
+        // 优先使用 contentType 获取扩展名，备用 file.name
+        let ext = contentTypeToExt[file.contentType || '']
+        if (!ext) {
+            ext = (file.name || 'jpg').split('.').pop() || 'jpg'
+        }
+
         const fileName = `forum_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
 
         // 保存到静态资源目录
-        file.save('media/forum/' + fileName)
+        const result = file.save('media/forum/' + fileName)
 
-        // 返回访问 URL
-        const imageUrl = `/media/forum/${fileName}`
-        return successResponse({ url: imageUrl })
+        return successResponse({ url: result.url })
     } catch (e: any) {
         return failResponse(e?.message || '图片上传失败')
     }

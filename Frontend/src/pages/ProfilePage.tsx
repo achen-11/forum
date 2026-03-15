@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,7 +9,7 @@ import { postApi } from '@/api/post'
 import { PostItem } from '@/components/PostItem'
 import type { Post } from '@/types/post'
 import type { UserInfo } from '@/types/auth'
-import { ArrowLeft, User, Mail, Phone, Loader2, Pencil } from 'lucide-react'
+import { ArrowLeft, User, Mail, Phone, Loader2, Pencil, Upload, X } from 'lucide-react'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -20,6 +20,9 @@ export default function ProfilePage() {
   const [editDisplayName, setEditDisplayName] = useState('')
   const [editAvatar, setEditAvatar] = useState('')
   const [submitLoading, setSubmitLoading] = useState(false)
+  const [uploadLoading, setUploadLoading] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 用户来自 store，仅拉取「我的帖子」避免瀑布流
   useEffect(() => {
@@ -49,6 +52,47 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     await logout()
     navigate('/login')
+  }
+
+  // 处理头像上传
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // 验证文件类型
+    if (!file.type.startsWith('image/')) {
+      alert('请上传图片文件')
+      return
+    }
+
+    // 验证文件大小（2MB）
+    if (file.size > 2 * 1024 * 1024) {
+      alert('图片大小不能超过 2MB')
+      return
+    }
+
+    setUploadLoading(true)
+    try {
+      const url = await postApi.uploadImage(file)
+      setEditAvatar(url)
+      // 创建预览 URL
+      const previewUrl = URL.createObjectURL(file)
+      setAvatarPreview(previewUrl)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '上传失败')
+    } finally {
+      setUploadLoading(false)
+      // 清空 input 以便重复选择同一文件
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  // 清除头像
+  const handleClearAvatar = () => {
+    setEditAvatar('')
+    setAvatarPreview('')
   }
 
   const handleSubmitEdit = async (e: React.FormEvent) => {
@@ -132,13 +176,56 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-700">头像 URL</label>
-                  <Input
-                    value={editAvatar}
-                    onChange={(e) => setEditAvatar(e.target.value)}
-                    placeholder="https://..."
-                    className="mt-1"
-                  />
+                  <label className="text-sm font-medium text-slate-700">头像</label>
+                  <div className="mt-1 flex items-center gap-4">
+                    <Avatar className="w-20 h-20">
+                      {avatarPreview || editAvatar ? (
+                        <AvatarImage src={avatarPreview || editAvatar} alt="" />
+                      ) : null}
+                      <AvatarFallback className="bg-slate-200 text-slate-600 text-xl">
+                        {(editDisplayName || user.userName || '?').slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadLoading}
+                        className="gap-1"
+                      >
+                        {uploadLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                        {editAvatar ? '更换头像' : '上传头像'}
+                      </Button>
+                      {editAvatar ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleClearAvatar}
+                          className="gap-1 text-slate-500 hover:text-red-500"
+                        >
+                          <X className="w-3 h-3" />
+                          清除
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    支持 JPG、PNG、GIF、WebP 格式，最大 2MB
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   <Button type="submit" disabled={submitLoading}>
@@ -155,6 +242,7 @@ export default function ProfilePage() {
                       setEditOpen(false)
                       setEditDisplayName(user.displayName ?? '')
                       setEditAvatar(user.avatar ?? '')
+                      setAvatarPreview('')
                     }}
                   >
                     取消
