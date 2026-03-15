@@ -170,10 +170,30 @@ export class ForumPostService {
         if (post) {
             Forum_Post.updateById(postId, {
                 replyCount: (post.replyCount || 0) + 1
-            })
+            } as any)
         }
 
-        return Forum_Reply.findById(replyId)
+        // 返回带作者信息的评论
+        const reply = Forum_Reply.findById(replyId)
+        if (!reply) {
+            throw new Error('创建评论失败')
+        }
+
+        // 获取作者信息
+        let author = null
+        if (reply.authorId) {
+            author = Forum_User.findOne({ _id: reply.authorId })
+        }
+
+        return {
+            ...reply,
+            author: author ? {
+                _id: author._id,
+                userName: author.userName,
+                displayName: author.displayName,
+                avatar: author.avatar
+            } : null
+        }
     }
 
     /**
