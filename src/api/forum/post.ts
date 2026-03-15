@@ -188,3 +188,154 @@ k.api.get('seed', () => {
         return failResponse(e?.message || '生成测试数据失败')
     }
 })
+
+/**
+ * 创建帖子
+ */
+k.api.post('create', () => {
+    try {
+        // 获取当前登录用户
+        const userId = ForumPostService.getCurrentUserId()
+        if (!userId) {
+            return failResponse('请先登录')
+        }
+
+        // 解析请求参数
+        const bodyStr = k.request.body
+        let body: { title?: string; content?: string; categoryId?: string }
+        try {
+            body = typeof bodyStr === 'string' ? JSON.parse(bodyStr) : bodyStr
+        } catch {
+            return failResponse('请求参数格式错误')
+        }
+
+        const { title, content, categoryId } = body
+
+        // 参数验证
+        if (!title || title.trim().length === 0) {
+            return failResponse('请输入帖子标题')
+        }
+        if (!content || content.trim().length === 0) {
+            return failResponse('请输入帖子内容')
+        }
+        if (!categoryId) {
+            return failResponse('请选择分类')
+        }
+
+        // 创建帖子
+        const post = ForumPostService.createPost(title, content, categoryId, userId)
+        return successResponse({ post })
+    } catch (e: any) {
+        return failResponse(e?.message || '创建帖子失败')
+    }
+})
+
+/**
+ * 获取帖子详情
+ */
+k.api.get('detail', () => {
+    try {
+        const postId = k.request.get('postId')
+        if (!postId) {
+            return failResponse('缺少帖子ID')
+        }
+
+        const post = ForumPostService.getPostDetail(postId)
+        return successResponse({ post })
+    } catch (e: any) {
+        return failResponse(e?.message || '获取帖子详情失败')
+    }
+})
+
+/**
+ * 创建评论
+ */
+k.api.post('reply/create', () => {
+    try {
+        // 获取当前登录用户
+        const userId = ForumPostService.getCurrentUserId()
+        if (!userId) {
+            return failResponse('请先登录')
+        }
+
+        // 解析请求参数
+        const bodyStr = k.request.body
+        let body: { postId?: string; content?: string; parentId?: string }
+        try {
+            body = typeof bodyStr === 'string' ? JSON.parse(bodyStr) : bodyStr
+        } catch {
+            return failResponse('请求参数格式错误')
+        }
+
+        const { postId, content, parentId } = body
+
+        // 参数验证
+        if (!postId) {
+            return failResponse('缺少帖子ID')
+        }
+        if (!content || content.trim().length === 0) {
+            return failResponse('请输入评论内容')
+        }
+
+        // 创建评论
+        const reply = ForumPostService.createReply(postId, content, userId, parentId || '')
+        return successResponse({ reply })
+    } catch (e: any) {
+        return failResponse(e?.message || '创建评论失败')
+    }
+})
+
+/**
+ * 获取评论列表
+ */
+k.api.get('reply/list', () => {
+    try {
+        const postId = k.request.get('postId')
+        if (!postId) {
+            return failResponse('缺少帖子ID')
+        }
+
+        const sortOrder = (k.request.get('sortOrder') as 'ASC' | 'DESC') || 'DESC'
+        const replies = ForumPostService.getReplyList(postId, sortOrder)
+        return successResponse({ replies })
+    } catch (e: any) {
+        return failResponse(e?.message || '获取评论列表失败')
+    }
+})
+
+/**
+ * 上传图片
+ */
+k.api.post('upload/image', () => {
+    try {
+        // 检查是否有文件
+        if (!k.request.files || k.request.files.length === 0) {
+            return failResponse('请选择要上传的图片')
+        }
+
+        const file = k.request.files[0]
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+        if (!file.contentType || !allowedTypes.includes(file.contentType)) {
+            return failResponse('仅支持 JPG、PNG、GIF、WebP 格式图片')
+        }
+
+        // 限制文件大小（2MB）
+        const maxSize = 2 * 1024 * 1024
+        if (file.bytes.length > maxSize) {
+            return failResponse('图片大小不能超过 2MB')
+        }
+
+        // 生成唯一文件名
+        const ext = (file.name || 'jpg').split('.').pop() || 'jpg'
+        const fileName = `forum_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+
+        // 保存到静态资源目录
+        file.save('media/forum/' + fileName)
+
+        // 返回访问 URL
+        const imageUrl = `/media/forum/${fileName}`
+        return successResponse({ url: imageUrl })
+    } catch (e: any) {
+        return failResponse(e?.message || '图片上传失败')
+    }
+})

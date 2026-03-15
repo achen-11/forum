@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { useAuthStore } from './stores/authStore'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
+import CreatePostPage from './pages/CreatePostPage'
+import PostDetailPage from './pages/PostDetailPage'
 import { Loader2 } from 'lucide-react'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -56,6 +58,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/post/new"
+          element={
+            <ProtectedRoute>
+              <CreatePostPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/post/:id"
+          element={
+            <ProtectedRoute>
+              <PostDetailPage />
             </ProtectedRoute>
           }
         />

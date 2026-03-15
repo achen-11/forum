@@ -35,6 +35,18 @@ export interface Category {
   sortOrder: number
 }
 
+// 评论类型定义
+export interface Reply {
+  _id: string
+  postId: string
+  parentId: string
+  authorId: string
+  author?: UserInfo
+  content: string
+  createdAt: string
+  updatedAt: string
+}
+
 // API 请求/响应类型
 
 export interface PostListParams {
@@ -52,4 +64,43 @@ export interface PostListResponse {
 
 export interface CategoryListResponse {
   categories: Category[]
+}
+
+// 创建帖子请求
+export interface CreatePostParams {
+  title: string
+  content: string
+  categoryId: string
+}
+
+// 创建帖子响应
+export interface CreatePostResponse {
+  post: Post
+}
+
+// 帖子详情响应
+export interface PostDetailResponse {
+  post: Post
+}
+
+// 创建评论请求
+export interface CreateReplyParams {
+  postId: string
+  content: string
+  parentId?: string
+}
+
+// 创建评论响应
+export interface CreateReplyResponse {
+  reply: Reply
+}
+
+// 评论列表响应
+export interface ReplyListResponse {
+  replies: Reply[]
+}
+
+// 图片上传响应
+export interface UploadImageResponse {
+  url: string
 }
