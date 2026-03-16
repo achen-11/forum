@@ -230,4 +230,120 @@ export class ForumPostService {
 
         return repliesWithAuthor
     }
+
+    /**
+     * 搜索帖子
+     * @param keyword 搜索关键词
+     * @param categoryId 可选的分类 ID
+     * @param page 页码（从 1 开始）
+     * @param pageSize 每页数量
+     */
+    static searchPosts(keyword: string, categoryId?: string, page: number = 1, pageSize: number = 10) {
+        // 参数校验
+        const pageNum = Math.max(1, page)
+        const size = Math.min(50, Math.max(1, pageSize))
+        const offset = (pageNum - 1) * size
+
+        // 构建搜索条件
+        let whereClause = ''
+        const params: Record<string, unknown> = {
+            keyword: `%${keyword}%`,
+            offset,
+            limit: size
+        }
+
+        if (categoryId) {
+            whereClause = 'AND p.categoryId = @categoryId'
+            params.categoryId = categoryId
+        }
+
+        // 使用原生 SQL 进行复杂搜索查询
+        // 支持标题和内容模糊匹配，按相关度（匹配次数）和创建时间排序
+        const sql = `
+            SELECT p.*,
+                   (CASE WHEN p.title LIKE @keyword THEN 1 ELSE 0 END +
+                    CASE WHEN p.content LIKE @keyword THEN 1 ELSE 0 END) as relevance,
+                   u._id as author_id,
+                   u.userName as author_userName,
+                   u.displayName as author_displayName,
+                   u.avatar as author_avatar,
+                   c._id as category_id,
+                   c.name as category_name
+            FROM Forum_Post p
+            LEFT JOIN Forum_User u ON p.authorId = u._id
+            LEFT JOIN Forum_Category c ON p.categoryId = c._id
+            WHERE (p.title LIKE @keyword OR p.content LIKE @keyword)
+            ${whereClause}
+            AND p.isDeleted = 0
+            ORDER BY relevance DESC, p.createdAt DESC
+            LIMIT @limit OFFSET @offset
+        `
+
+        const posts = k.DB.sqlite.query(sql, params) as Array<{
+            _id: string
+            title: string
+            content: string
+            summary: string
+            authorId: string
+            categoryId: string
+            viewCount: number
+            replyCount: number
+            likeCount: number
+            isPinned: boolean
+            relevance: number
+            createdAt: string
+            updatedAt: string
+            author_id: string
+            author_userName: string
+            author_displayName: string
+            author_avatar: string
+            category_id: string
+            category_name: string
+        }>
+
+        // 格式化返回结果
+        const result = posts.map(post => ({
+            _id: post._id,
+            title: post.title,
+            content: post.content,
+            summary: post.summary,
+            viewCount: post.viewCount,
+            replyCount: post.replyCount,
+            likeCount: post.likeCount,
+            isPinned: post.isPinned,
+            createdAt: post.createdAt,
+            updatedAt: post.updatedAt,
+            author: post.author_id ? {
+                _id: post.author_id,
+                userName: post.author_userName,
+                displayName: post.author_displayName,
+                avatar: post.author_avatar
+            } : null,
+            category: post.category_id ? {
+                _id: post.category_id,
+                name: post.category_name
+            } : null
+        }))
+
+        // 获取总数（用于分页）
+        let countSql = `
+            SELECT COUNT(*) as total
+            FROM Forum_Post p
+            WHERE (p.title LIKE @keyword OR p.content LIKE @keyword)
+            ${whereClause}
+            AND p.isDeleted = 0
+        `
+        const countResult = k.DB.sqlite.query(countSql, params) as Array<{ total: number }>
+        const total = countResult[0]?.total || 0
+
+        return {
+            list: result,
+            pagination: {
+                page: pageNum,
+                pageSize: size,
+                total,
+                totalPages: Math.ceil(total / size)
+            }
+        }
+    }
 }
