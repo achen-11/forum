@@ -4,6 +4,7 @@ import { Toaster } from 'sonner'
 import { useAuthStore } from './stores/authStore'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
+import SearchPage from './pages/SearchPage'
 import CreatePostPage from './pages/CreatePostPage'
 import PostDetailPage from './pages/PostDetailPage'
 import ProfilePage from './pages/ProfilePage'
@@ -57,6 +58,7 @@ export default function App() {
       <Toaster position="top-center" />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/search" element={<SearchPage />} />
         <Route
           path="/"
           element={

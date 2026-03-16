@@ -104,3 +104,17 @@ export interface ReplyListResponse {
 export interface UploadImageResponse {
   url: string
 }
+
+// 搜索结果分页
+export interface SearchPagination {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
+// 搜索响应（解包后的格式）
+export interface SearchResponse {
+  list: Post[]
+  pagination: SearchPagination
+}

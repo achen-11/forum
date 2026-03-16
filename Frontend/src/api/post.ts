@@ -1,5 +1,5 @@
 import { http } from '@/lib/request'
-import type { Category, Post, Reply, CreatePostParams, CreateReplyParams } from '@/types/post'
+import type { Category, Post, Reply, CreatePostParams, CreateReplyParams, SearchResponse, SearchPagination } from '@/types/post'
 
 export const postApi = {
   /**
@@ -66,5 +66,26 @@ export const postApi = {
     formData.append('file', file)
     const data = await http.post<{ url: string }>('/api/forum/post/upload/image', formData as unknown as object)
     return (data as unknown as { url: string }).url
+  },
+
+  /**
+   * 搜索帖子
+   * @param keyword 搜索关键词
+   * @param categoryId 可选的分类 ID
+   * @param page 页码
+   * @param pageSize 每页数量
+   */
+  searchPosts: async (keyword: string, categoryId?: string, page: number = 1, pageSize: number = 10): Promise<SearchResponse> => {
+    const params = new URLSearchParams()
+    params.set('keyword', keyword)
+    if (categoryId) params.set('categoryId', categoryId)
+    params.set('page', String(page))
+    params.set('pageSize', String(pageSize))
+    // http.get 返回的是解包后的 data，格式已经是 { list, pagination }
+    const data = await http.get<{ list: Post[], pagination: SearchPagination }>(`/api/search/search?${params.toString()}`)
+    return {
+      list: data.list,
+      pagination: data.pagination
+    }
   },
 }

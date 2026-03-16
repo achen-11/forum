@@ -21,8 +21,9 @@ k.api.get('search', () => {
     // 参数校验
     if (!keyword.trim()) {
         return {
-            success: false,
-            message: '请输入搜索关键词'
+            code: 400,
+            message: '请输入搜索关键词',
+            data: null
         }
     }
 
@@ -35,7 +36,8 @@ k.api.get('search', () => {
     )
 
     return {
-        success: true,
+        code: 200,
+        message: 'success',
         data: result
     }
 })

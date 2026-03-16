@@ -278,7 +278,7 @@ export class ForumPostService {
             ORDER BY relevance DESC, p.createdAt DESC
             LIMIT @limit OFFSET @offset
         `
-
+        // @ts-ignore
         const posts = k.DB.sqlite.query(sql, params) as Array<{
             _id: string
             title: string
@@ -333,7 +333,7 @@ export class ForumPostService {
             ${whereClause}
             AND p.isDeleted = 0
         `
-        const countResult = k.DB.sqlite.query(countSql, params) as Array<{ total: number }>
+        const countResult = k.DB.sqlite.query(countSql, params) as unknown as Array<{ total: number }>
         const total = countResult[0]?.total || 0
 
         return {

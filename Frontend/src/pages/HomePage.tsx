@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { usePostStore } from '@/stores/postStore'
 import { HomeSidebar } from '@/components/HomeSidebar'
 import { PostList } from '@/components/PostList'
-import { Plus, Bell, ChevronDown } from 'lucide-react'
+import { Plus, Bell, ChevronDown, Search } from 'lucide-react'
 
 type SortOption = 'recent' | 'popular' | 'unanswered'
 
@@ -16,6 +16,8 @@ export default function HomePage() {
   const { categories, selectedCategoryId, fetchCategories, fetchPosts, setSelectedCategory } = usePostStore()
   const [sortBy, setSortBy] = useState<SortOption>('recent')
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [searchInput, setSearchInput] = useState('')
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchCategories()
@@ -37,18 +39,27 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Search Placeholder */}
-          <div className="hidden md:flex relative w-64 lg:w-96">
+          {/* Search Bar */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (searchInput.trim()) {
+                navigate(`/search?keyword=${encodeURIComponent(searchInput.trim())}`)
+              }
+            }}
+            className="hidden md:flex relative w-64 lg:w-96"
+          >
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <Search className="w-4 h-4" />
             </span>
             <input
+              ref={searchInputRef}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               placeholder="搜索讨论、标签或用户..."
               className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
             />
-          </div>
+          </form>
 
           {/* Right */}
           <div className="flex items-center gap-3">
