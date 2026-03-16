@@ -136,3 +136,37 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: 首页全新UI设计与优化
+
+**Date**: 2026-03-15
+**Task**: 首页全新UI设计与优化
+
+### Summary
+
+重构论坛首页UI：帖子卡片改为左右两栏布局，新增HomeSidebar侧边栏组件（导航/分类/Tags），Header添加用户下拉菜单/搜索框占位/通知占位，筛选栏添加最新/热门/待回复切换，使用indigo主题色。同时修复了图片上传扩展名、头像显示、alert替换等问题。
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4e37442` | (see git log) |
+| `b5682de` | (see git log) |
+| `a36764b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
