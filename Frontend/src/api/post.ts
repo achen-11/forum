@@ -104,4 +104,62 @@ export const postApi = {
     const data = await http.post<{ tag: Tag }>('/api/forum/tag/create', { name, color })
     return (data as unknown as { tag: Tag }).tag
   },
+
+  /**
+   * 点赞或取消点赞
+   */
+  toggleLike: async (targetType: 'post' | 'reply', targetId: string): Promise<{ isLiked: boolean; message: string }> => {
+    const data = await http.post<{ isLiked: boolean; message: string }>('/api/forum/post/like', {
+      targetType,
+      targetId
+    })
+    return data as unknown as { isLiked: boolean; message: string }
+  },
+
+  /**
+   * 收藏或取消收藏帖子
+   */
+  toggleCollect: async (postId: string): Promise<{ isCollected: boolean; message: string }> => {
+    const data = await http.post<{ isCollected: boolean; message: string }>('/api/forum/post/collect', { postId })
+    return data as unknown as { isCollected: boolean; message: string }
+  },
+
+  /**
+   * 获取帖子互动状态
+   */
+  getPostStatus: async (postId: string): Promise<{
+    isLiked: boolean
+    isCollected: boolean
+    likeCount: number
+    shareCount: number
+  }> => {
+    const data = await http.get<{
+      isLiked: boolean
+      isCollected: boolean
+      likeCount: number
+      shareCount: number
+    }>(`/api/forum/post/status?postId=${encodeURIComponent(postId)}`)
+    return data as unknown as {
+      isLiked: boolean
+      isCollected: boolean
+      likeCount: number
+      shareCount: number
+    }
+  },
+
+  /**
+   * 获取相关帖子
+   */
+  getRelatedPosts: async (postId: string, limit: number = 5): Promise<Post[]> => {
+    const data = await http.get<{ posts: Post[] }>(`/api/forum/post/related?postId=${encodeURIComponent(postId)}&limit=${limit}`)
+    return (data as unknown as { posts: Post[] }).posts
+  },
+
+  /**
+   * 分享帖子
+   */
+  sharePost: async (postId: string): Promise<{ shareCount: number; message: string }> => {
+    const data = await http.post<{ shareCount: number; message: string }>(`/api/forum/post/share?postId=${encodeURIComponent(postId)}`, {})
+    return data as unknown as { shareCount: number; message: string }
+  },
 }

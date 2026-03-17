@@ -21,6 +21,7 @@ export interface Post {
   viewCount: number
   replyCount: number
   likeCount?: number
+  shareCount?: number
   isPinned: boolean
   isEssence?: boolean
   createdAt: string
