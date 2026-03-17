@@ -2,6 +2,8 @@ import { Forum_Post } from 'code/Models/Forum_Post'
 import { Forum_Category } from 'code/Models/Forum_Category'
 import { Forum_User } from 'code/Models/Forum_User'
 import { Forum_Reply } from 'code/Models/Forum_Reply'
+import { Forum_Like } from 'code/Models/Forum_Like'
+import { Forum_Post_Tag } from 'code/Models/Forum_Post_Tag'
 import { getCurrentUser } from 'code/Services/auth'
 
 export class ForumPostService {
@@ -345,5 +347,209 @@ export class ForumPostService {
                 totalPages: Math.ceil(total / size)
             }
         }
+    }
+
+    /**
+     * 点赞或取消点赞帖子/评论
+     * @param targetType 目标类型：post / reply
+     * @param targetId 目标 ID
+     * @returns { isLiked: boolean, likeCount: number, message: string }
+     */
+    static toggleLike(targetType: string, targetId: string) {
+        const userId = this.getCurrentUserId()
+        if (!userId) {
+            throw new Error('请先登录')
+        }
+
+        // 查询是否已点赞
+        const existingLike = Forum_Like.findOne({
+            userId,
+            targetType,
+            targetId
+        })
+
+        if (existingLike) {
+            // 已点赞，执行取消点赞
+            Forum_Like.deleteById(existingLike._id)
+
+            // 更新目标点赞数
+            if (targetType === 'post') {
+                const post = Forum_Post.findById(targetId)
+                if (post) {
+                    Forum_Post.updateById(targetId, {
+                        likeCount: Math.max(0, (post.likeCount || 1) - 1)
+                    } as any)
+                }
+            }
+            // reply 也类似处理（如果需要）
+
+            // 获取最新点赞数
+            const post = targetType === 'post' ? Forum_Post.findById(targetId) : null
+            return {
+                isLiked: false,
+                likeCount: post?.likeCount || 0,
+                message: '取消点赞成功'
+            }
+        } else {
+            // 未点赞，执行点赞
+            Forum_Like.create({
+                userId,
+                targetType,
+                targetId
+            })
+
+            // 更新目标点赞数
+            if (targetType === 'post') {
+                const post = Forum_Post.findById(targetId)
+                if (post) {
+                    Forum_Post.updateById(targetId, {
+                        likeCount: (post.likeCount || 0) + 1
+                    } as any)
+                }
+            }
+            // reply 也类似处理（如果需要）
+
+            // 获取最新点赞数
+            const post = targetType === 'post' ? Forum_Post.findById(targetId) : null
+            return {
+                isLiked: true,
+                likeCount: post?.likeCount || 0,
+                message: '点赞成功'
+            }
+        }
+    }
+
+    /**
+     * 检查当前用户是否点赞了指定目标
+     * @param targetType 目标类型：post / reply
+     * @param targetId 目标 ID
+     */
+    static isLiked(targetType: string, targetId: string): boolean {
+        const userId = this.getCurrentUserId()
+        if (!userId) {
+            return false
+        }
+
+        const like = Forum_Like.findOne({
+            userId,
+            targetType,
+            targetId
+        })
+        return !!like
+    }
+
+    /**
+     * 增加分享次数
+     * @param postId 帖子 ID
+     * @returns { shareCount: number }
+     */
+    static incrementShareCount(postId: string) {
+        const post = Forum_Post.findById(postId)
+        if (!post) {
+            throw new Error('帖子不存在')
+        }
+
+        const newCount = (post.shareCount || 0) + 1
+        Forum_Post.updateById(postId, {
+            shareCount: newCount
+        } as any)
+
+        return { shareCount: newCount }
+    }
+
+    /**
+     * 获取相关帖子
+     * @param postId 当前帖子 ID
+     * @param limit 返回数量限制
+     */
+    static getRelatedPosts(postId: string, limit: number = 5) {
+        const currentPost = Forum_Post.findById(postId)
+        if (!currentPost) {
+            return []
+        }
+
+        // 获取当前帖子的标签
+        const postTags = Forum_Post_Tag.findAll({ postId })
+        const tagIds = postTags.map(pt => pt.tagId)
+
+        // 查询条件：同分类 或 同标签（排除当前帖子）
+        let relatedPosts: any[] = []
+
+        if (currentPost.categoryId) {
+            // 使用原生 SQL 查询同分类的帖子
+            const sql = `
+                SELECT p.* FROM Forum_Post p
+                WHERE p.categoryId = @categoryId AND p._id != @postId AND p.isDeleted = 0
+                ORDER BY p.viewCount DESC
+            `
+            const sameCategoryPosts = k.DB.sqlite.query(sql, {
+                categoryId: currentPost.categoryId,
+                postId
+            }) as any[]
+            relatedPosts = [...relatedPosts, ...sameCategoryPosts]
+        }
+
+        if (tagIds.length > 0) {
+            // 查询同标签的帖子
+            const tagPlaceholders = tagIds.map((_, i) => `@tag${i}`).join(', ')
+            const tagParams: Record<string, string> = { postId }
+            tagIds.forEach((tagId, i) => {
+                tagParams[`tag${i}`] = tagId
+            })
+
+            const sql = `
+                SELECT DISTINCT p.* FROM Forum_Post p
+                INNER JOIN Forum_Post_Tag pt ON p._id = pt.postId
+                WHERE pt.tagId IN (${tagPlaceholders}) AND p._id != @postId AND p.isDeleted = 0
+                ORDER BY p.viewCount DESC
+            `
+            const sameTagPosts = k.DB.sqlite.query(sql, tagParams) as any[]
+            relatedPosts = [...relatedPosts, ...sameTagPosts]
+        }
+
+        // 去重、排序并限制数量
+        const seen = new Set<string>()
+        const deduplicatedPosts = relatedPosts
+            .filter(post => {
+                if (seen.has(post._id)) return false
+                seen.add(post._id)
+                return true
+            })
+            .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+            .slice(0, limit)
+
+        return deduplicatedPosts.slice(0, limit).map(post => {
+            // 获取作者信息
+            let author = null
+            if (post.authorId) {
+                author = Forum_User.findOne({ _id: post.authorId })
+            }
+
+            // 获取分类信息
+            let category = null
+            if (post.categoryId) {
+                category = Forum_Category.findOne({ _id: post.categoryId })
+            }
+
+            return {
+                _id: post._id,
+                title: post.title,
+                summary: post.summary,
+                viewCount: post.viewCount,
+                replyCount: post.replyCount,
+                likeCount: post.likeCount,
+                createdAt: post.createdAt,
+                author: author ? {
+                    _id: author._id,
+                    userName: author.userName,
+                    displayName: author.displayName,
+                    avatar: author.avatar
+                } : null,
+                category: category ? {
+                    _id: category._id,
+                    name: category.name
+                } : null
+            }
+        })
     }
 }

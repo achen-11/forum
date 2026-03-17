@@ -37,6 +37,10 @@ const Forum_Post = ksql.define(
             type: DataTypes.Number,
             default: 0
         },
+        shareCount: {
+            type: DataTypes.Number,
+            default: 0
+        },
         isPinned: {
             type: DataTypes.Boolean,
             default: false,

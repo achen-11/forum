@@ -2,6 +2,7 @@
 
 import { ForumPostService } from 'code/Services/ForumPostService'
 import { ForumTagService } from 'code/Services/ForumTagService'
+import { ForumCollectionService } from 'code/Services/ForumCollectionService'
 import { Forum_Category } from 'code/Models/Forum_Category'
 import { Forum_Post } from 'code/Models/Forum_Post'
 import { Forum_User } from 'code/Models/Forum_User'
@@ -70,7 +71,7 @@ k.api.get('seed', () => {
             { name: '资源共享', description: '资源分享和推荐' }
         ]
 
-        const categories: Array<{ _id: string }> = []
+        const categories: Array<{ _id: string; name: string }> = []
         for (let i = 0; i < categoryNames.length; i++) {
             const cat = categoryNames[i]
             let existing = Forum_Category.findOne({ name: cat.name })
@@ -83,7 +84,7 @@ k.api.get('seed', () => {
                 existing = Forum_Category.findById(id)
             }
             if (existing) {
-                categories.push({ _id: existing._id })
+                categories.push({ _id: existing._id, name: existing.name })
             }
         }
 
@@ -91,7 +92,25 @@ k.api.get('seed', () => {
             return failResponse('创建测试数据失败')
         }
 
-        // 创建测试帖子
+        // 创建测试标签
+        const tagData = [
+            { name: 'React', color: '#61dafb' },
+            { name: 'Vue', color: '#42b883' },
+            { name: 'TypeScript', color: '#3178c6' },
+            { name: '前端', color: '#ff6b6b' },
+            { name: '后端', color: '#4ecdc4' },
+            { name: 'Kooboo', color: '#7c3aed' }
+        ]
+
+        const tags: Array<{ _id: string; name: string }> = []
+        for (const tagInfo of tagData) {
+            const tag = ForumTagService.createTag(tagInfo.name, tagInfo.color)
+            if (tag) {
+                tags.push({ _id: tag._id, name: tag.name })
+            }
+        }
+
+        // 创建测试帖子（带标签）
         const postData = [
             {
                 title: '欢迎来到内部论坛',
@@ -102,7 +121,8 @@ k.api.get('seed', () => {
                 isPinned: true,
                 viewCount: 100,
                 replyCount: 5,
-                likeCount: 10
+                likeCount: 10,
+                tagIndices: [] as number[]
             },
             {
                 title: 'React 19 新特性分享',
@@ -113,7 +133,8 @@ k.api.get('seed', () => {
                 isPinned: false,
                 viewCount: 50,
                 replyCount: 3,
-                likeCount: 8
+                likeCount: 8,
+                tagIndices: [0, 2, 3] // React, TypeScript, 前端
             },
             {
                 title: '周末一起去爬山吗？',
@@ -124,7 +145,8 @@ k.api.get('seed', () => {
                 isPinned: false,
                 viewCount: 30,
                 replyCount: 12,
-                likeCount: 15
+                likeCount: 15,
+                tagIndices: [] as number[]
             },
             {
                 title: '如何配置开发环境？',
@@ -135,7 +157,8 @@ k.api.get('seed', () => {
                 isPinned: false,
                 viewCount: 20,
                 replyCount: 8,
-                likeCount: 3
+                likeCount: 3,
+                tagIndices: [3, 4] // 前端, 后端
             },
             {
                 title: '推荐一款好用的笔记软件',
@@ -146,7 +169,8 @@ k.api.get('seed', () => {
                 isPinned: false,
                 viewCount: 45,
                 replyCount: 6,
-                likeCount: 20
+                likeCount: 20,
+                tagIndices: [] as number[]
             },
             {
                 title: 'Kooboo 框架使用心得',
@@ -157,7 +181,32 @@ k.api.get('seed', () => {
                 isPinned: true,
                 viewCount: 80,
                 replyCount: 10,
-                likeCount: 25
+                likeCount: 25,
+                tagIndices: [5, 4] // Kooboo, 后端
+            },
+            {
+                title: 'Vue 3 组合式 API 入门',
+                content: 'Vue 3 的组合式 API 是未来趋势，本文带你快速入门...',
+                summary: 'Vue 3 组合式 API 入门指南。',
+                categoryIndex: 0,
+                authorId: user1._id,
+                isPinned: false,
+                viewCount: 60,
+                replyCount: 4,
+                likeCount: 12,
+                tagIndices: [1, 2, 3] // Vue, TypeScript, 前端
+            },
+            {
+                title: 'TypeScript 高级类型实战',
+                content: '分享一些 TypeScript 高级类型的使用技巧...',
+                summary: 'TypeScript 高级类型实战技巧。',
+                categoryIndex: 0,
+                authorId: user2._id,
+                isPinned: false,
+                viewCount: 35,
+                replyCount: 2,
+                likeCount: 7,
+                tagIndices: [2, 3] // TypeScript, 前端
             }
         ]
 
@@ -176,14 +225,28 @@ k.api.get('seed', () => {
                 isPinned: data.isPinned,
                 viewCount: data.viewCount,
                 replyCount: data.replyCount,
-                likeCount: data.likeCount
+                likeCount: data.likeCount,
+                shareCount: 0
             })
-            if (id) postCount++
+
+            if (id) {
+                postCount++
+                // 添加标签关联
+                if (data.tagIndices.length > 0) {
+                    const tagIds = data.tagIndices
+                        .filter(idx => tags[idx])
+                        .map(idx => tags[idx]._id)
+                    if (tagIds.length > 0) {
+                        ForumTagService.addTagsToPost(id, tagIds)
+                    }
+                }
+            }
         }
 
         return successResponse({
-            message: `创建成功：${categories.length} 个分类，${postCount} 篇帖子`,
+            message: `创建成功：${categories.length} 个分类，${tags.length} 个标签，${postCount} 篇帖子`,
             categories: categories.length,
+            tags: tags.length,
             posts: postCount
         })
     } catch (e: any) {
@@ -370,5 +433,134 @@ k.api.post('upload/image', () => {
         return successResponse({ url: result.url })
     } catch (e: any) {
         return failResponse(e?.message || '图片上传失败')
+    }
+})
+
+/**
+ * 点赞或取消点赞帖子/评论
+ */
+k.api.post('like', () => {
+    try {
+        const userId = ForumPostService.getCurrentUserId()
+        if (!userId) {
+            return failResponse('请先登录')
+        }
+
+        const bodyStr = k.request.body
+        let body: { targetType?: string; targetId?: string }
+        try {
+            body = typeof bodyStr === 'string' ? JSON.parse(bodyStr) : bodyStr
+        } catch {
+            return failResponse('请求参数格式错误')
+        }
+
+        const { targetType, targetId } = body
+
+        if (!targetType || !targetId) {
+            return failResponse('缺少参数')
+        }
+        if (!['post', 'reply'].includes(targetType)) {
+            return failResponse('无效的目标类型')
+        }
+
+        const result = ForumPostService.toggleLike(targetType, targetId)
+        return successResponse(result)
+    } catch (e: any) {
+        return failResponse(e?.message || '操作失败')
+    }
+})
+
+/**
+ * 获取帖子互动状态（点赞、收藏）
+ */
+k.api.get('status', () => {
+    try {
+        const postId = k.request.get('postId')
+        if (!postId) {
+            return failResponse('缺少帖子ID')
+        }
+
+        const post = Forum_Post.findById(postId)
+        if (!post) {
+            return failResponse('帖子不存在')
+        }
+
+        const isLiked = ForumPostService.isLiked('post', postId)
+        const isCollected = ForumCollectionService.isCollected(postId)
+
+        return successResponse({
+            isLiked,
+            isCollected,
+            likeCount: post.likeCount || 0,
+            shareCount: post.shareCount || 0
+        })
+    } catch (e: any) {
+        return failResponse(e?.message || '获取状态失败')
+    }
+})
+
+/**
+ * 收藏或取消收藏帖子
+ */
+k.api.post('collect', () => {
+    try {
+        const userId = ForumPostService.getCurrentUserId()
+        if (!userId) {
+            return failResponse('请先登录')
+        }
+
+        const bodyStr = k.request.body
+        let body: { postId?: string }
+        try {
+            body = typeof bodyStr === 'string' ? JSON.parse(bodyStr) : bodyStr
+        } catch {
+            return failResponse('请求参数格式错误')
+        }
+
+        const { postId } = body
+
+        if (!postId) {
+            return failResponse('缺少帖子ID')
+        }
+
+        const result = ForumCollectionService.toggleCollect(postId)
+        return successResponse(result)
+    } catch (e: any) {
+        return failResponse(e?.message || '操作失败')
+    }
+})
+
+/**
+ * 获取相关帖子
+ */
+k.api.get('related', () => {
+    try {
+        const postId = k.request.get('postId')
+        if (!postId) {
+            return failResponse('缺少帖子ID')
+        }
+
+        const limit = parseInt(k.request.get('limit') || '5')
+        const posts = ForumPostService.getRelatedPosts(postId, limit)
+        return successResponse({ posts })
+    } catch (e: any) {
+        return failResponse(e?.message || '获取相关帖子失败')
+    }
+})
+
+/**
+ * 分享帖子
+ */
+k.api.post('share', () => {
+    try {
+        const postId = k.request.get('postId')
+        if (!postId) {
+            return failResponse('缺少帖子ID')
+        }
+
+        const result = ForumPostService.incrementShareCount(postId)
+        return successResponse(result)
+    } catch (e: any) {
+        return failResponse(e?.message || '分享失败')
     }
 })

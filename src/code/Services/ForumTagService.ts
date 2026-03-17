@@ -8,10 +8,13 @@ export class ForumTagService {
      * @param limit 返回数量限制
      */
     static getTagList(limit: number = 20) {
-        const tags = Forum_Tag.findAll({}, {
-            order: [{ prop: 'usageCount', order: 'DESC' }],
-            limit
-        })
+        // 使用原生 SQL 进行分页查询
+        const tags = k.DB.sqlite.query(
+            `SELECT * FROM Forum_Tag
+             ORDER BY usageCount DESC
+             LIMIT @limit`,
+            { limit }
+        ) as unknown as Array<{ _id: string; name: string; color: string; usageCount: number }>
         return tags
     }
 
@@ -115,11 +118,14 @@ export class ForumTagService {
         const size = Math.min(50, Math.max(1, pageSize))
         const offset = (pageNum - 1) * size
 
-        // 查找使用该标签的帖子关联
-        const postTags = Forum_Post_Tag.findAll({ tagId }, {
-            limit: size,
-            offset
-        })
+        // 使用原生 SQL 进行分页查询
+        const postTags = k.DB.sqlite.query(
+            `SELECT * FROM Forum_Post_Tag
+             WHERE tagId = @tagId
+             ORDER BY _id DESC
+             LIMIT @limit OFFSET @offset`,
+            { tagId, limit: size, offset }
+        ) as unknown as Array<{ _id: string; postId: string; tagId: string }>
 
         // 获取帖子详情
         const posts = postTags.map(pt => {
