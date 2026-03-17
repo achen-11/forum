@@ -19,6 +19,11 @@ const Forum_Category = ksql.define(
             type: DataTypes.Number,
             default: 0,
             index: true
+        },
+        showOnHome: {
+            type: DataTypes.Boolean,
+            default: true,
+            comment: '是否在首页展示'
         }
     },
     {

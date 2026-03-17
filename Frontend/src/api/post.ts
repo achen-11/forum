@@ -1,5 +1,5 @@
 import { http } from '@/lib/request'
-import type { Category, Post, Reply, CreatePostParams, CreateReplyParams, SearchResponse, SearchPagination } from '@/types/post'
+import type { Category, Post, Reply, Tag, CreatePostParams, CreateReplyParams, SearchResponse, SearchPagination } from '@/types/post'
 
 export const postApi = {
   /**
@@ -87,5 +87,21 @@ export const postApi = {
       list: data.list,
       pagination: data.pagination
     }
+  },
+
+  /**
+   * 获取标签列表
+   */
+  getTagList: async (limit: number = 20): Promise<Tag[]> => {
+    const data = await http.get<{ tags: Tag[] }>(`/api/forum/tag/list?limit=${limit}`)
+    return (data as unknown as { tags: Tag[] }).tags
+  },
+
+  /**
+   * 创建标签
+   */
+  createTag: async (name: string, color?: string): Promise<Tag> => {
+    const data = await http.post<{ tag: Tag }>('/api/forum/tag/create', { name, color })
+    return (data as unknown as { tag: Tag }).tag
   },
 }

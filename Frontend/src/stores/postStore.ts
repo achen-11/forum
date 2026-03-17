@@ -1,21 +1,24 @@
 import { create } from 'zustand'
 import { postApi } from '@/api/post'
-import type { Category, Post } from '@/types/post'
+import type { Category, Post, Tag } from '@/types/post'
 
 interface PostState {
   categories: Category[]
+  tags: Tag[]
   selectedCategoryId: string | null
   posts: Post[]
   isLoading: boolean
   error: string | null
 
   fetchCategories: () => Promise<void>
+  fetchTags: () => Promise<void>
   fetchPosts: (categoryId?: string) => Promise<void>
   setSelectedCategory: (categoryId: string | null) => void
 }
 
 export const usePostStore = create<PostState>((set, get) => ({
   categories: [],
+  tags: [],
   selectedCategoryId: null,
   posts: [],
   isLoading: false,
@@ -28,6 +31,15 @@ export const usePostStore = create<PostState>((set, get) => ({
       set({ categories, isLoading: false })
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false })
+    }
+  },
+
+  fetchTags: async () => {
+    try {
+      const tags = await postApi.getTagList()
+      set({ tags })
+    } catch (error) {
+      console.error('Failed to fetch tags:', error)
     }
   },
 

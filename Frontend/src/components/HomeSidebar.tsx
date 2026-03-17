@@ -1,14 +1,15 @@
 import { Link } from 'react-router-dom'
 import { Home, MessageCircle, FileText, ChevronRight } from 'lucide-react'
-import type { Category } from '@/types/post'
+import type { Category, Tag } from '@/types/post'
 
 interface HomeSidebarProps {
   categories: Category[]
+  tags: Tag[]
   selectedCategoryId: string | null
   onSelectCategory: (categoryId: string | null) => void
 }
 
-export function HomeSidebar({ categories, selectedCategoryId, onSelectCategory }: HomeSidebarProps) {
+export function HomeSidebar({ categories, tags, selectedCategoryId, onSelectCategory }: HomeSidebarProps) {
   return (
     <aside className="w-60 flex-shrink-0 space-y-4 lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:overflow-y-auto">
       {/* Navigation */}
@@ -76,18 +77,20 @@ export function HomeSidebar({ categories, selectedCategoryId, onSelectCategory }
       <div className="bg-white rounded-xl border border-slate-200 p-4">
         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">标签</h2>
         <div className="flex flex-wrap gap-2">
-          <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors">
-            #engineering
-          </span>
-          <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors">
-            #roadmap
-          </span>
-          <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors">
-            #culture
-          </span>
-          <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors">
-            #remote
-          </span>
+          {tags.length === 0 ? (
+            <span className="text-xs text-slate-400">暂无标签</span>
+          ) : (
+            tags.map((tag) => (
+              <Link
+                key={tag._id}
+                to={`/search?tag=${encodeURIComponent(tag.name)}`}
+                className="px-3 py-1 text-xs rounded-full hover:opacity-80 cursor-pointer transition-opacity"
+                style={{ backgroundColor: tag.color || '#6366f1', color: '#fff' }}
+              >
+                #{tag.name}
+              </Link>
+            ))
+          )}
         </div>
       </div>
     </aside>

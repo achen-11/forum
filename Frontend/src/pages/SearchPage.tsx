@@ -131,7 +131,7 @@ export default function SearchPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user } = useAuthStore()
-  const { categories, selectedCategoryId, fetchCategories, setSelectedCategory } = usePostStore()
+  const { categories, tags, selectedCategoryId, fetchCategories, fetchTags, setSelectedCategory } = usePostStore()
 
   const keyword = searchParams.get('keyword') || ''
   const categoryId = searchParams.get('categoryId') || ''
@@ -146,7 +146,8 @@ export default function SearchPage() {
 
   useEffect(() => {
     fetchCategories()
-  }, [fetchCategories])
+    fetchTags()
+  }, [fetchCategories, fetchTags])
 
   useEffect(() => {
     if (!keyword) {
@@ -281,6 +282,7 @@ export default function SearchPage() {
           {/* 左侧边栏 */}
           <HomeSidebar
             categories={categories}
+            tags={tags}
             selectedCategoryId={selectedCategoryId}
             onSelectCategory={(id) => {
               setSelectedCategory(id)

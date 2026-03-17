@@ -1,5 +1,13 @@
 // 帖子类型定义
 
+// 标签类型
+export interface Tag {
+  _id: string
+  name: string
+  color?: string
+  usageCount?: number
+}
+
 export interface Post {
   _id: string
   title: string
@@ -9,6 +17,7 @@ export interface Post {
   author?: UserInfo
   categoryId: string
   category?: Category
+  tags?: Tag[]
   viewCount: number
   replyCount: number
   likeCount?: number
@@ -71,6 +80,7 @@ export interface CreatePostParams {
   title: string
   content: string
   categoryId: string
+  tags?: string[]
 }
 
 // 创建帖子响应

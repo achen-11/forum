@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { postApi } from '@/api/post'
 import type { Post, Reply } from '@/types/post'
 import { ArrowLeft, Eye, MessageCircle, Clock, Send, ArrowUpDown } from 'lucide-react'
+import { Hash } from 'lucide-react'
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -151,6 +152,21 @@ export default function PostDetailPage() {
                 <span className="px-2 py-0.5 bg-slate-100 rounded-full text-slate-600">
                   {post.category.name}
                 </span>
+              )}
+              {post.tags && post.tags.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <Hash className="w-3 h-3" />
+                  {post.tags.map((tag) => (
+                    <Link
+                      key={tag._id}
+                      to={`/search?tag=${encodeURIComponent(tag.name)}`}
+                      className="px-1.5 py-0.5 rounded-full text-xs hover:opacity-80 transition-opacity"
+                      style={{ backgroundColor: tag.color || '#6366f1', color: '#fff' }}
+                    >
+                      {tag.name}
+                    </Link>
+                  ))}
+                </div>
               )}
               <span className="flex items-center gap-1">
                 <Eye className="w-4 h-4" />

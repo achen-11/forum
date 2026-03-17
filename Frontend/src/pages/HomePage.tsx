@@ -13,7 +13,7 @@ type SortOption = 'recent' | 'popular' | 'unanswered'
 export default function HomePage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const { categories, selectedCategoryId, fetchCategories, fetchPosts, setSelectedCategory } = usePostStore()
+  const { categories, tags, selectedCategoryId, fetchCategories, fetchTags, fetchPosts, setSelectedCategory } = usePostStore()
   const [sortBy, setSortBy] = useState<SortOption>('recent')
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [searchInput, setSearchInput] = useState('')
@@ -21,8 +21,9 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchCategories()
+    fetchTags()
     fetchPosts()
-  }, [fetchCategories, fetchPosts])
+  }, [fetchCategories, fetchTags, fetchPosts])
 
   return (
     <div className="min-h-screen bg-[#f6f6f8]">
@@ -130,6 +131,7 @@ export default function HomePage() {
           {/* 左侧边栏 */}
           <HomeSidebar
             categories={categories}
+            tags={tags}
             selectedCategoryId={selectedCategoryId}
             onSelectCategory={setSelectedCategory}
           />

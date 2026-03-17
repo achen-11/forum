@@ -8,13 +8,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { postApi } from '@/api/post'
 import { usePostStore } from '@/stores/postStore'
-import { ArrowLeft, Bold, Italic, List, ListOrdered, Image as ImageIcon } from 'lucide-react'
+import type { Tag } from '@/types/post'
+import { ArrowLeft, Bold, Italic, List, ListOrdered, Image as ImageIcon, Plus, X } from 'lucide-react'
 
 export default function CreatePostPage() {
   const navigate = useNavigate()
-  const { categories, fetchCategories } = usePostStore()
+  const { categories, tags, fetchCategories, fetchTags } = usePostStore()
   const [title, setTitle] = useState('')
   const [categoryId, setCategoryId] = useState('')
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([])
+  const [newTagName, setNewTagName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -38,10 +41,11 @@ export default function CreatePostPage() {
     },
   })
 
-  // 加载分类列表
+  // 加载分类和标签列表
   useEffect(() => {
     fetchCategories()
-  }, [fetchCategories])
+    fetchTags()
+  }, [fetchCategories, fetchTags])
 
   // 处理图片粘贴
   const handlePaste = useCallback(
@@ -87,6 +91,34 @@ export default function CreatePostPage() {
     }
   }
 
+  // 处理添加标签
+  const handleAddTag = (tag: Tag) => {
+    if (!selectedTags.find(t => t._id === tag._id)) {
+      setSelectedTags([...selectedTags, tag])
+    }
+  }
+
+  // 处理移除标签
+  const handleRemoveTag = (tagId: string) => {
+    setSelectedTags(selectedTags.filter(t => t._id !== tagId))
+  }
+
+  // 处理创建新标签
+  const handleCreateTag = async () => {
+    if (!newTagName.trim()) return
+
+    try {
+      const tag = await postApi.createTag(newTagName.trim())
+      if (!selectedTags.find(t => t._id === tag._id)) {
+        setSelectedTags([...selectedTags, tag])
+      }
+      setNewTagName('')
+      fetchTags() // 刷新标签列表
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '创建标签失败')
+    }
+  }
+
   // 添加图片按钮点击
   const handleSubmit = async () => {
     setError('')
@@ -116,6 +148,7 @@ export default function CreatePostPage() {
         title: title.trim(),
         content,
         categoryId,
+        tags: selectedTags.map(t => t.name),
       })
       navigate(`/post/${post._id}`)
     } catch (err) {
@@ -208,6 +241,74 @@ export default function CreatePostPage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* 标签选择 */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              标签
+            </label>
+            {/* 已选标签 */}
+            {selectedTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {selectedTags.map((tag) => (
+                  <span
+                    key={tag._id}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs"
+                    style={{ backgroundColor: tag.color || '#6366f1', color: '#fff' }}
+                  >
+                    #{tag.name}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag._id)}
+                      className="hover:opacity-70"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {/* 标签选择器 */}
+            <div className="border border-slate-300 rounded-lg bg-white p-3">
+              <div className="flex flex-wrap gap-2 mb-2">
+                {tags.filter(t => !selectedTags.find(st => st._id === t._id)).map((tag) => (
+                  <button
+                    key={tag._id}
+                    type="button"
+                    onClick={() => handleAddTag(tag)}
+                    className="px-2 py-1 text-xs rounded-full hover:opacity-80 transition-opacity"
+                    style={{ backgroundColor: tag.color || '#6366f1', color: '#fff' }}
+                  >
+                    + #{tag.name}
+                  </button>
+                ))}
+              </div>
+              {/* 创建新标签 */}
+              <div className="flex gap-2">
+                <Input
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  placeholder="创建新标签..."
+                  className="h-8 text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleCreateTag()
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCreateTag}
+                  disabled={!newTagName.trim()}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* 富文本编辑器 */}

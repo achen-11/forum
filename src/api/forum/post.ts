@@ -1,6 +1,7 @@
 // @k-url /api/forum/post/{action}
 
 import { ForumPostService } from 'code/Services/ForumPostService'
+import { ForumTagService } from 'code/Services/ForumTagService'
 import { Forum_Category } from 'code/Models/Forum_Category'
 import { Forum_Post } from 'code/Models/Forum_Post'
 import { Forum_User } from 'code/Models/Forum_User'
@@ -203,14 +204,14 @@ k.api.post('create', () => {
 
         // 解析请求参数
         const bodyStr = k.request.body
-        let body: { title?: string; content?: string; categoryId?: string }
+        let body: { title?: string; content?: string; categoryId?: string; tags?: string[] }
         try {
             body = typeof bodyStr === 'string' ? JSON.parse(bodyStr) : bodyStr
         } catch {
             return failResponse('请求参数格式错误')
         }
 
-        const { title, content, categoryId } = body
+        const { title, content, categoryId, tags } = body
 
         // 参数验证
         if (!title || title.trim().length === 0) {
@@ -225,6 +226,23 @@ k.api.post('create', () => {
 
         // 创建帖子
         const post = ForumPostService.createPost(title, content, categoryId, userId)
+
+        // 如果有标签，添加到帖子
+        if (tags && tags.length > 0 && post) {
+            const tagIds: string[] = []
+            for (const tagName of tags) {
+                if (tagName.trim()) {
+                    const tag = ForumTagService.createTag(tagName.trim())
+                    if (tag) {
+                        tagIds.push(tag._id)
+                    }
+                }
+            }
+            if (tagIds.length > 0) {
+                ForumTagService.addTagsToPost(post._id, tagIds)
+            }
+        }
+
         return successResponse({ post })
     } catch (e: any) {
         return failResponse(e?.message || '创建帖子失败')
@@ -242,7 +260,11 @@ k.api.get('detail', () => {
         }
 
         const post = ForumPostService.getPostDetail(postId)
-        return successResponse({ post })
+
+        // 获取帖子标签
+        const tags = ForumTagService.getPostTags(postId)
+
+        return successResponse({ post: { ...post, tags } })
     } catch (e: any) {
         return failResponse(e?.message || '获取帖子详情失败')
     }
