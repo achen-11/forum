@@ -1,5 +1,5 @@
 import { http } from '@/lib/request'
-import type { Category, Post, Reply, Tag, CreatePostParams, CreateReplyParams, SearchResponse, SearchPagination } from '@/types/post'
+import type { Category, Post, Reply, Tag, CreatePostParams, CreateReplyParams, SearchResponse, SearchPagination, EditPostParams, DeleteResponse } from '@/types/post'
 
 export const postApi = {
   /**
@@ -167,5 +167,29 @@ export const postApi = {
   sharePost: async (postId: string): Promise<{ shareCount: number; message: string }> => {
     const data = await http.post<{ shareCount: number; message: string }>(`/api/forum/post/share?postId=${encodeURIComponent(postId)}`, {})
     return data as unknown as { shareCount: number; message: string }
+  },
+
+  /**
+   * 编辑帖子
+   */
+  editPost: async (params: EditPostParams): Promise<Post> => {
+    const data = await http.post<{ post: Post }>('/api/forum/post/edit', params)
+    return (data as unknown as { post: Post }).post
+  },
+
+  /**
+   * 删除帖子
+   */
+  deletePost: async (postId: string): Promise<DeleteResponse> => {
+    const data = await http.post<DeleteResponse>('/api/forum/post/delete', { postId })
+    return data as unknown as DeleteResponse
+  },
+
+  /**
+   * 删除回复
+   */
+  deleteReply: async (replyId: string): Promise<DeleteResponse> => {
+    const data = await http.post<DeleteResponse>('/api/forum/post/reply/delete', { replyId })
+    return data as unknown as DeleteResponse
   },
 }

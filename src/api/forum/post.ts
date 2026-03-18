@@ -382,10 +382,122 @@ k.api.get('reply/list', () => {
         }
 
         const sortOrder = (k.request.get('sortOrder') as 'ASC' | 'DESC') || 'DESC'
-        const replies = ForumPostService.getReplyList(postId, sortOrder)
+        // 使用嵌套回复列表
+        const replies = ForumPostService.getNestedReplyList(postId, sortOrder)
         return successResponse({ replies })
     } catch (e: any) {
         return failResponse(e?.message || '获取评论列表失败')
+    }
+})
+
+/**
+ * 编辑帖子
+ */
+k.api.post('edit', () => {
+    try {
+        // 获取当前登录用户
+        const userId = ForumPostService.getCurrentUserId()
+        if (!userId) {
+            return failResponse('请先登录')
+        }
+
+        // 解析请求参数
+        const bodyStr = k.request.body
+        let body: { postId?: string; title?: string; content?: string }
+        try {
+            body = typeof bodyStr === 'string' ? JSON.parse(bodyStr) : bodyStr
+        } catch {
+            return failResponse('请求参数格式错误')
+        }
+
+        const { postId, title, content } = body
+
+        // 参数验证
+        if (!postId) {
+            return failResponse('缺少帖子ID')
+        }
+        if (!title || title.trim().length === 0) {
+            return failResponse('请输入帖子标题')
+        }
+        if (!content || content.trim().length === 0) {
+            return failResponse('请输入帖子内容')
+        }
+
+        // 编辑帖子
+        const post = ForumPostService.editPost(postId, title, content)
+        return successResponse({ post })
+    } catch (e: any) {
+        return failResponse(e?.message || '编辑帖子失败')
+    }
+})
+
+/**
+ * 删除帖子
+ */
+k.api.post('delete', () => {
+    try {
+        // 获取当前登录用户
+        const userId = ForumPostService.getCurrentUserId()
+        if (!userId) {
+            return failResponse('请先登录')
+        }
+
+        // 解析请求参数
+        const bodyStr = k.request.body
+        let body: { postId?: string }
+        try {
+            body = typeof bodyStr === 'string' ? JSON.parse(bodyStr) : bodyStr
+        } catch {
+            return failResponse('请求参数格式错误')
+        }
+
+        const { postId } = body
+
+        // 参数验证
+        if (!postId) {
+            return failResponse('缺少帖子ID')
+        }
+
+        // 删除帖子
+        const result = ForumPostService.deletePost(postId)
+        return successResponse(result)
+    } catch (e: any) {
+        return failResponse(e?.message || '删除帖子失败')
+    }
+})
+
+/**
+ * 删除回复
+ */
+k.api.post('reply/delete', () => {
+    try {
+        // 获取当前登录用户
+        const userId = ForumPostService.getCurrentUserId()
+        if (!userId) {
+            return failResponse('请先登录')
+        }
+
+        // 解析请求参数
+        const bodyStr = k.request.body
+        let body: { replyId?: string }
+        try {
+            body = typeof bodyStr === 'string' ? JSON.parse(bodyStr) : bodyStr
+        } catch {
+            return failResponse('请求参数格式错误')
+        }
+
+        const { replyId } = body
+
+        // 参数验证
+        if (!replyId) {
+            return failResponse('缺少回复ID')
+        }
+
+        // 删除回复
+        const result = ForumPostService.deleteReply(replyId)
+        return successResponse(result)
+    } catch (e: any) {
+        return failResponse(e?.message || '删除回复失败')
     }
 })
 

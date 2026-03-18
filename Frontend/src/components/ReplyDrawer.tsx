@@ -12,10 +12,12 @@ interface ReplyDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   postId: string
+  parentId?: string
+  replyToName?: string
   onReplySuccess: (reply: Reply) => void
 }
 
-export function ReplyDrawer({ open, onOpenChange, postId, onReplySuccess }: ReplyDrawerProps) {
+export function ReplyDrawer({ open, onOpenChange, postId, parentId, replyToName, onReplySuccess }: ReplyDrawerProps) {
   const [content, setContent] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -26,6 +28,9 @@ export function ReplyDrawer({ open, onOpenChange, postId, onReplySuccess }: Repl
     }
     onOpenChange(isOpen)
   }
+
+  // Get the drawer title based on reply type
+  const drawerTitle = parentId ? `回复 ${replyToName || ''}` : '回复'
 
   // Insert markdown syntax at cursor position
   const insertMarkdown = useCallback((before: string, after: string = '') => {
@@ -99,6 +104,7 @@ export function ReplyDrawer({ open, onOpenChange, postId, onReplySuccess }: Repl
       const newReply = await postApi.createReply({
         postId,
         content: htmlContent,
+        parentId: parentId || '',
       })
       onReplySuccess(newReply)
       handleOpenChange(false)
@@ -123,7 +129,7 @@ export function ReplyDrawer({ open, onOpenChange, postId, onReplySuccess }: Repl
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerContent title="回复">
+      <DrawerContent title={drawerTitle}>
         <div className="flex flex-col h-[calc(70vh-92px)] overflow-hidden px-4">
           {/* Toolbar */}
           <div className="flex items-center gap-1 px-2 py-2 border-b bg-slate-50">

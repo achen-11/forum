@@ -16,6 +16,34 @@ export class ForumPostService {
     }
 
     /**
+     * 获取当前登录用户（包含 role）
+     */
+    static getCurrentUser() {
+        return getCurrentUser()
+    }
+
+    /**
+     * 检查是否为管理员
+     */
+    static isAdmin(): boolean {
+        const user = getCurrentUser()
+        return user?.role === 'admin'
+    }
+
+    /**
+     * 检查当前用户是否有权限操作目标
+     * @param targetAuthorId 目标作者的 ID
+     */
+    static canManage(targetAuthorId: string): boolean {
+        const user = getCurrentUser()
+        if (!user) return false
+        // 管理员可以管理任何人的内容
+        if (user.role === 'admin') return true
+        // 普通用户只能管理自己的内容
+        return user._id === targetAuthorId
+    }
+
+    /**
      * 获取分类列表
      */
     static getCategoryList() {
@@ -143,7 +171,8 @@ export class ForumPostService {
                 _id: author._id,
                 userName: author.userName,
                 displayName: author.displayName,
-                avatar: author.avatar
+                avatar: author.avatar,
+                role: author.role || 'user'
             } : null,
             category: category ? {
                 _id: category._id,
@@ -549,6 +578,190 @@ export class ForumPostService {
                     _id: category._id,
                     name: category.name
                 } : null
+            }
+        })
+    }
+
+    /**
+     * 编辑帖子
+     * @param postId 帖子 ID
+     * @param title 新标题
+     * @param content 新内容
+     * @returns 更新后的帖子
+     */
+    static editPost(postId: string, title: string, content: string) {
+        const user = getCurrentUser()
+        if (!user) {
+            throw new Error('请先登录')
+        }
+
+        const post = Forum_Post.findById(postId)
+        if (!post) {
+            throw new Error('帖子不存在')
+        }
+
+        // 权限检查：管理员可编辑任何帖子，普通用户只能编辑自己的帖子
+        if (!this.canManage(post.authorId)) {
+            throw new Error('无权限编辑此帖子')
+        }
+
+        // 生成新摘要
+        const summary = content.replace(/<[^>]*>/g, '').slice(0, 100) + (content.length > 100 ? '...' : '')
+
+        // 更新帖子
+        Forum_Post.updateById(postId, {
+            title,
+            content,
+            summary,
+            isEdited: true,
+            editedAt: Date.now()
+        } as any)
+
+        return this.getPostDetail(postId)
+    }
+
+    /**
+     * 删除帖子
+     * @param postId 帖子 ID
+     */
+    static deletePost(postId: string) {
+        const user = getCurrentUser()
+        if (!user) {
+            throw new Error('请先登录')
+        }
+
+        const post = Forum_Post.findById(postId)
+        if (!post) {
+            throw new Error('帖子不存在')
+        }
+
+        // 权限检查：管理员可删除任何帖子，普通用户只能删除自己的帖子
+        if (!this.canManage(post.authorId)) {
+            throw new Error('无权限删除此帖子')
+        }
+
+        // 软删除帖子
+        Forum_Post.deleteById(postId)
+
+        // 级联删除关联的回复（软删除）
+        const replies = Forum_Reply.findAll({ postId })
+        for (const reply of replies) {
+            Forum_Reply.deleteById(reply._id)
+        }
+
+        // 删除关联的点赞
+        const likes = Forum_Like.findAll({ targetType: 'post', targetId: postId })
+        for (const like of likes) {
+            Forum_Like.deleteById(like._id)
+        }
+
+        return { success: true, message: '删除成功' }
+    }
+
+    /**
+     * 删除回复
+     * @param replyId 回复 ID
+     */
+    static deleteReply(replyId: string) {
+        const user = getCurrentUser()
+        if (!user) {
+            throw new Error('请先登录')
+        }
+
+        const reply = Forum_Reply.findById(replyId)
+        if (!reply) {
+            throw new Error('回复不存在')
+        }
+
+        // 权限检查：管理员可删除任何回复，普通用户只能删除自己的回复
+        if (!this.canManage(reply.authorId)) {
+            throw new Error('无权限删除此回复')
+        }
+
+        // 软删除回复
+        Forum_Reply.deleteById(replyId)
+
+        // 更新帖子评论数
+        const post = Forum_Post.findById(reply.postId)
+        if (post && post.replyCount > 0) {
+            Forum_Post.updateById(reply.postId, {
+                replyCount: post.replyCount - 1
+            } as any)
+        }
+
+        // 删除关联的点赞
+        const likes = Forum_Like.findAll({ targetType: 'reply', targetId: replyId })
+        for (const like of likes) {
+            Forum_Like.deleteById(like._id)
+        }
+
+        return { success: true, message: '删除成功' }
+    }
+
+    /**
+     * 获取嵌套的回复列表
+     * @param postId 帖子 ID
+     * @param sortOrder 排序方式：ASC（正序）/ DESC（倒序）
+     */
+    static getNestedReplyList(postId: string, sortOrder: 'ASC' | 'DESC' = 'DESC') {
+        const replies = Forum_Reply.findAll({ postId }, {
+            order: [{ prop: 'createdAt', order: sortOrder }]
+        })
+
+        // 关联查询作者信息
+        const repliesWithAuthor = replies.map(reply => {
+            let author = null
+            if (reply.authorId) {
+                author = Forum_User.findOne({ _id: reply.authorId })
+            }
+
+            // 获取被回复者信息
+            let parentReply = null
+            if (reply.parentId) {
+                parentReply = Forum_Reply.findById(reply.parentId)
+            }
+
+            return {
+                ...reply,
+                author: author ? {
+                    _id: author._id,
+                    userName: author.userName,
+                    displayName: author.displayName,
+                    avatar: author.avatar,
+                    role: author.role || 'user'
+                } : null,
+                parentReply: parentReply ? {
+                    _id: parentReply._id,
+                    authorId: parentReply.authorId
+                } : null
+            }
+        })
+
+        // 构建嵌套结构
+        // 一级回复（parentId 为空）
+        const topLevelReplies = repliesWithAuthor.filter(r => !r.parentId)
+        // 二级回复（parentId 不为空）
+        const childReplies = repliesWithAuthor.filter(r => r.parentId)
+
+        // 为每个一级回复添加 children
+        return topLevelReplies.map(reply => {
+            const children = childReplies.filter(r => r.parentId === reply._id)
+            return {
+                ...reply,
+                children: children.map(child => {
+                    // 查找被回复者的显示名称
+                    const parentAuthor = child.parentReply
+                        ? Forum_User.findOne({ _id: child.parentReply.authorId })
+                        : null
+                    return {
+                        ...child,
+                        replyTo: parentAuthor ? {
+                            _id: parentAuthor._id,
+                            displayName: parentAuthor.displayName,
+                            userName: parentAuthor.userName
+                        } : null
+                    }
+                })
             }
         })
     }

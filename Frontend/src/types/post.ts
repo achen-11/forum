@@ -24,6 +24,8 @@ export interface Post {
   shareCount?: number
   isPinned: boolean
   isEssence?: boolean
+  isEdited?: boolean
+  editedAt?: number
   createdAt: string
   updatedAt: string
 }
@@ -35,6 +37,7 @@ export interface UserInfo {
   email?: string
   displayName?: string
   avatar?: string
+  role?: string
 }
 
 export interface Category {
@@ -55,6 +58,17 @@ export interface Reply {
   content: string
   createdAt: string
   updatedAt: string
+  // 嵌套回复相关
+  parentReply?: {
+    _id: string
+    authorId: string
+  }
+  replyTo?: {
+    _id: string
+    displayName?: string
+    userName?: string
+  }
+  children?: Reply[]
 }
 
 // API 请求/响应类型
@@ -128,4 +142,17 @@ export interface SearchPagination {
 export interface SearchResponse {
   list: Post[]
   pagination: SearchPagination
+}
+
+// 编辑帖子请求
+export interface EditPostParams {
+  postId: string
+  title: string
+  content: string
+}
+
+// 删除帖子/回复响应
+export interface DeleteResponse {
+  success: boolean
+  message: string
 }

@@ -45,6 +45,15 @@ const Forum_Post = ksql.define(
             type: DataTypes.Boolean,
             default: false,
             index: true
+        },
+        isEdited: {
+            type: DataTypes.Boolean,
+            default: false,
+            comment: '是否已编辑'
+        },
+        editedAt: {
+            type: DataTypes.Timestamp,
+            comment: '编辑时间'
         }
     },
     {

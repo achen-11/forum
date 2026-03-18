@@ -4,14 +4,20 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { postApi } from '@/api/post'
 import type { Post, Reply } from '@/types/post'
-import { ArrowLeft, Eye, MessageCircle, Clock, ArrowUpDown, Heart, Bookmark, Share2, ChevronRight, Users, BookOpen, Shield } from 'lucide-react'
+import { ArrowLeft, Eye, MessageCircle, Clock, ArrowUpDown, Heart, Bookmark, Share2, ChevronRight, Users, BookOpen, Shield, Trash2, Edit } from 'lucide-react'
 import { Hash } from 'lucide-react'
 import { Header } from '@/components/Header'
 import { ReplyDrawer } from '@/components/ReplyDrawer'
+import { useAuthStore } from '@/stores/authStore'
+import { toast } from '@/lib/toast'
+import { Drawer, DrawerContent } from '@/components/ui/drawer'
+import { SplitEditor } from '@/components/SplitEditor'
+import { marked } from 'marked'
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { user, isAuthenticated } = useAuthStore()
 
   const [post, setPost] = useState<Post | null>(null)
   const [replies, setReplies] = useState<Reply[]>([])
@@ -20,6 +26,16 @@ export default function PostDetailPage() {
   const [error, setError] = useState('')
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC')
   const [isReplyDrawerOpen, setIsReplyDrawerOpen] = useState(false)
+
+  // 嵌套回复抽屉状态
+  const [nestedReplyDrawerOpen, setNestedReplyDrawerOpen] = useState(false)
+  const [replyingToReply, setReplyingToReply] = useState<{ parentId: string; replyToName: string } | null>(null)
+
+  // 编辑帖子抽屉状态
+  const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editContent, setEditContent] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
 
   // 互动状态
   const [isLiked, setIsLiked] = useState(false)
@@ -114,12 +130,113 @@ export default function PostDetailPage() {
     setIsFollowing(!isFollowing)
   }
 
+  // 打开嵌套回复抽屉
+  const handleReplyToReply = (parentId: string, replyToName: string) => {
+    if (!isAuthenticated) {
+      toast.error('请先登录后回复')
+      return
+    }
+    setReplyingToReply({ parentId, replyToName })
+    setNestedReplyDrawerOpen(true)
+  }
+
+  // 嵌套回复成功回调
+  const handleNestedReplySuccess = (_newReply: Reply) => {
+    // 重新加载回复列表
+    if (id) {
+      postApi.getReplyList(id, sortOrder).then(setReplies)
+    }
+    // 更新帖子评论数
+    if (post) {
+      setPost({ ...post, replyCount: post.replyCount + 1 })
+    }
+    setNestedReplyDrawerOpen(false)
+    setReplyingToReply(null)
+  }
+
+  // 检查当前用户是否有权限管理帖子/回复
+  const canManagePost = () => {
+    if (!isAuthenticated || !user || !post?.author) return false
+    return user._id === post.author._id || user.role === 'admin'
+  }
+
+  const canManageReply = (replyAuthorId?: string) => {
+    if (!isAuthenticated || !user || !replyAuthorId) return false
+    return user._id === replyAuthorId || user.role === 'admin'
+  }
+
+  // 删除帖子
+  const handleDeletePost = async () => {
+    if (!id || !confirm('确定要删除这个帖子吗？此操作不可恢复。')) return
+
+    try {
+      await postApi.deletePost(id)
+      toast.success('删除成功')
+      navigate('/')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '删除失败')
+    }
+  }
+
+  // 删除回复
+  const handleDeleteReply = async (replyId: string) => {
+    if (!confirm('确定要删除这条回复吗？')) return
+
+    try {
+      await postApi.deleteReply(replyId)
+      toast.success('删除成功')
+      // 重新加载回复列表
+      if (id) {
+        const newReplies = await postApi.getReplyList(id, sortOrder)
+        setReplies(newReplies)
+      }
+      // 更新帖子评论数
+      if (post) {
+        setPost({ ...post, replyCount: Math.max(0, post.replyCount - 1) })
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '删除失败')
+    }
+  }
+
+  // 打开编辑抽屉
+  const handleOpenEditDrawer = () => {
+    if (!post) return
+    setEditTitle(post.title)
+    setEditContent(post.content.replace(/<[^>]*>/g, '')) // 简单去除HTML标签
+    setIsEditDrawerOpen(true)
+  }
+
+  // 提交编辑
+  const handleSubmitEdit = async () => {
+    if (!id || !editTitle.trim() || !editContent.trim()) {
+      toast.error('请填写标题和内容')
+      return
+    }
+
+    setIsEditing(true)
+    try {
+      const htmlContent = marked(editContent, { async: false }) as string
+      const updatedPost = await postApi.editPost({
+        postId: id,
+        title: editTitle,
+        content: htmlContent
+      })
+      setPost(updatedPost)
+      setIsEditDrawerOpen(false)
+      toast.success('编辑成功')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '编辑失败')
+    } finally {
+      setIsEditing(false)
+    }
+  }
+
   // 回复成功回调
-  const handleReplySuccess = (newReply: Reply) => {
-    if (sortOrder === 'DESC') {
-      setReplies([newReply, ...replies])
-    } else {
-      setReplies([...replies, newReply])
+  const handleReplySuccess = (_newReply: Reply) => {
+    // 重新加载回复列表以获取嵌套结构
+    if (id) {
+      postApi.getReplyList(id, sortOrder).then(setReplies)
     }
     // 更新帖子评论数
     if (post) {
@@ -248,12 +365,18 @@ export default function PostDetailPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium text-slate-900">
+                        <div className="font-medium text-slate-900 flex items-center gap-2">
                           {post.author?.displayName || post.author?.userName || '未知用户'}
+                          {post.author?.role === 'admin' && (
+                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">管理员</span>
+                          )}
                         </div>
                         <div className="text-sm text-slate-500 flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {formatTime(post.createdAt)}
+                          {post.isEdited && post.editedAt && (
+                            <span className="text-slate-400">(已编辑)</span>
+                          )}
                         </div>
                       </div>
                     </Link>
@@ -268,17 +391,47 @@ export default function PostDetailPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium text-slate-900">
+                        <div className="font-medium text-slate-900 flex items-center gap-2">
                           {post.author?.displayName || post.author?.userName || '未知用户'}
+                          {post.author?.role === 'admin' && (
+                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">管理员</span>
+                          )}
                         </div>
                         <div className="text-sm text-slate-500 flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {formatTime(post.createdAt)}
+                          {post.isEdited && post.editedAt && (
+                            <span className="text-slate-400">(已编辑)</span>
+                          )}
                         </div>
                       </div>
                     </>
                   )}
                 </div>
+
+                {/* 帖子操作按钮（编辑/删除） */}
+                {canManagePost() && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-slate-600"
+                      onClick={handleOpenEditDrawer}
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      编辑
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-500 hover:text-red-600"
+                      onClick={handleDeletePost}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      删除
+                    </Button>
+                  </div>
+                )}
 
                 {/* 互动按钮 */}
                 <div className="flex items-center gap-2">
@@ -370,13 +523,22 @@ export default function PostDetailPage() {
                   </p>
                 ) : (
                   replies.map((reply) => (
-                    <div
-                      key={reply._id}
-                      className="flex gap-3 p-4 bg-slate-50 rounded-lg"
-                    >
-                      {reply.author?._id ? (
-                        <Link to={`/user/${reply.author._id}`} className="shrink-0">
-                          <Avatar className="w-8 h-8 hover:opacity-80">
+                    <div key={reply._id} className="space-y-3">
+                      {/* 一级回复 */}
+                      <div className="flex gap-3 p-4 bg-slate-50 rounded-lg">
+                        {reply.author?._id ? (
+                          <Link to={`/user/${reply.author._id}`} className="shrink-0">
+                            <Avatar className="w-8 h-8 hover:opacity-80">
+                              {reply.author?.avatar ? (
+                                <AvatarImage src={reply.author.avatar} alt="" />
+                              ) : null}
+                              <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm">
+                                {getInitials(reply.author?.displayName || reply.author?.userName)}
+                              </AvatarFallback>
+                            </Avatar>
+                          </Link>
+                        ) : (
+                          <Avatar className="w-8 h-8 shrink-0">
                             {reply.author?.avatar ? (
                               <AvatarImage src={reply.author.avatar} alt="" />
                             ) : null}
@@ -384,39 +546,128 @@ export default function PostDetailPage() {
                               {getInitials(reply.author?.displayName || reply.author?.userName)}
                             </AvatarFallback>
                           </Avatar>
-                        </Link>
-                      ) : (
-                        <Avatar className="w-8 h-8 shrink-0">
-                          {reply.author?.avatar ? (
-                            <AvatarImage src={reply.author.avatar} alt="" />
-                          ) : null}
-                          <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm">
-                            {getInitials(reply.author?.displayName || reply.author?.userName)}
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          {reply.author?._id ? (
-                            <Link
-                              to={`/user/${reply.author._id}`}
-                              className="font-medium text-slate-900 text-sm hover:underline"
-                            >
-                              {reply.author?.displayName || reply.author?.userName || '未知用户'}
-                            </Link>
-                          ) : (
-                            <span className="font-medium text-slate-900 text-sm">
-                              {reply.author?.displayName || reply.author?.userName || '未知用户'}
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            {reply.author?._id ? (
+                              <Link
+                                to={`/user/${reply.author._id}`}
+                                className="font-medium text-slate-900 text-sm hover:underline flex items-center gap-1"
+                              >
+                                {reply.author?.displayName || reply.author?.userName || '未知用户'}
+                                {reply.author?.role === 'admin' && (
+                                  <span className="px-1 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">管理员</span>
+                                )}
+                              </Link>
+                            ) : (
+                              <span className="font-medium text-slate-900 text-sm">
+                                {reply.author?.displayName || reply.author?.userName || '未知用户'}
+                              </span>
+                            )}
+                            <span className="text-xs text-slate-400">
+                              {formatTime(reply.createdAt)}
                             </span>
-                          )}
-                          <span className="text-xs text-slate-400">
-                            {formatTime(reply.createdAt)}
-                          </span>
+                          </div>
+                          <p className="text-slate-700 text-sm whitespace-pre-wrap">
+                            {reply.content}
+                          </p>
+                          {/* 操作按钮 */}
+                          <div className="flex items-center gap-3 mt-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-slate-500 h-6 px-2 text-xs"
+                              onClick={() => handleReplyToReply(reply._id, reply.author?.displayName || reply.author?.userName || '用户')}
+                            >
+                              回复
+                            </Button>
+                            {canManageReply(reply.author?._id) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 h-6 px-2 text-xs hover:text-red-600"
+                                onClick={() => handleDeleteReply(reply._id)}
+                              >
+                                删除
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-slate-700 text-sm whitespace-pre-wrap">
-                          {reply.content}
-                        </p>
                       </div>
+
+                      {/* 二级回复 */}
+                      {reply.children && reply.children.length > 0 && (
+                        <div className="ml-11 space-y-3 border-l-2 border-slate-200 pl-4">
+                          {reply.children.map((child) => (
+                            <div key={child._id} className="flex gap-3 p-3 bg-white rounded-lg border border-slate-100">
+                              {child.author?._id ? (
+                                <Link to={`/user/${child.author._id}`} className="shrink-0">
+                                  <Avatar className="w-6 h-6 hover:opacity-80">
+                                    {child.author?.avatar ? (
+                                      <AvatarImage src={child.author.avatar} alt="" />
+                                    ) : null}
+                                    <AvatarFallback className="bg-indigo-100 text-indigo-600 text-xs">
+                                      {getInitials(child.author?.displayName || child.author?.userName)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                </Link>
+                              ) : (
+                                <Avatar className="w-6 h-6 shrink-0">
+                                  {child.author?.avatar ? (
+                                    <AvatarImage src={child.author.avatar} alt="" />
+                                  ) : null}
+                                  <AvatarFallback className="bg-indigo-100 text-indigo-600 text-xs">
+                                    {getInitials(child.author?.displayName || child.author?.userName)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  {child.author?._id ? (
+                                    <Link
+                                      to={`/user/${child.author._id}`}
+                                      className="font-medium text-slate-900 text-xs hover:underline flex items-center gap-1"
+                                    >
+                                      {child.author?.displayName || child.author?.userName || '未知用户'}
+                                      {child.author?.role === 'admin' && (
+                                        <span className="px-1 py-0.5 bg-amber-100 text-amber-700 text-[10px] rounded">管理员</span>
+                                      )}
+                                    </Link>
+                                  ) : (
+                                    <span className="font-medium text-slate-900 text-xs">
+                                      {child.author?.displayName || child.author?.userName || '未知用户'}
+                                    </span>
+                                  )}
+                                  {child.replyTo && (
+                                    <span className="text-xs text-slate-400">
+                                      回复 {child.replyTo.displayName || child.replyTo.userName}
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-slate-400">
+                                    {formatTime(child.createdAt)}
+                                  </span>
+                                </div>
+                                <p className="text-slate-700 text-sm whitespace-pre-wrap">
+                                  {child.content}
+                                </p>
+                                {/* 操作按钮 - 二级回复不能再次回复（限制2层） */}
+                                <div className="flex items-center gap-3 mt-2">
+                                  {canManageReply(child.author?._id) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-500 h-6 px-2 text-xs hover:text-red-600"
+                                      onClick={() => handleDeleteReply(child._id)}
+                                    >
+                                      删除
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -526,6 +777,62 @@ export default function PostDetailPage() {
         postId={id || ''}
         onReplySuccess={handleReplySuccess}
       />
+
+      {/* 嵌套回复抽屉 */}
+      <ReplyDrawer
+        open={nestedReplyDrawerOpen}
+        onOpenChange={(open) => {
+          setNestedReplyDrawerOpen(open)
+          if (!open) setReplyingToReply(null)
+        }}
+        postId={id || ''}
+        parentId={replyingToReply?.parentId}
+        replyToName={replyingToReply?.replyToName}
+        onReplySuccess={handleNestedReplySuccess}
+      />
+
+      {/* 编辑帖子抽屉 */}
+      <Drawer open={isEditDrawerOpen} onOpenChange={setIsEditDrawerOpen}>
+        <DrawerContent title="编辑帖子">
+          <div className="flex flex-col h-[calc(70vh-92px)] overflow-hidden px-4">
+            {/* 标题输入 */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-700 mb-1">标题</label>
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="请输入帖子标题"
+              />
+            </div>
+
+            {/* 内容编辑器 */}
+            <div className="flex-1 overflow-hidden">
+              <label className="block text-sm font-medium text-slate-700 mb-1">内容</label>
+              <SplitEditor value={editContent} onChange={setEditContent} />
+            </div>
+
+            {/* 底部按钮 */}
+            <div className="flex items-center justify-between pt-4 shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditDrawerOpen(false)}
+              >
+                取消
+              </Button>
+              <Button
+                onClick={handleSubmitEdit}
+                disabled={isEditing}
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
+                {isEditing ? '保存中...' : '保存'}
+              </Button>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   )
 }
