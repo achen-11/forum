@@ -10,6 +10,7 @@ import ProfilePage from './pages/ProfilePage'
 import UserProfilePage from './pages/UserProfilePage'
 import AdminContentPage from './pages/AdminContentPage'
 import AdminCategoryPage from './pages/AdminCategoryPage'
+import AdminTagPage from './pages/AdminTagPage'
 import { Loader2 } from 'lucide-react'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -98,6 +99,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AdminCategoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/tag"
+          element={
+            <ProtectedRoute>
+              <AdminTagPage />
             </ProtectedRoute>
           }
         />

@@ -106,6 +106,13 @@ export function Header() {
                     >
                       分类管理
                     </Link>
+                    <Link
+                      to="/admin/tag"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      标签管理
+                    </Link>
                   </>
                 )}
                 <hr className="my-2 border-slate-100" />
