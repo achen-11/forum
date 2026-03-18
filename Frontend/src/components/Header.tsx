@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useAuthStore } from '@/stores/authStore'
-import { Bell, ChevronDown, Search } from 'lucide-react'
+import { Bell, ChevronDown, Search, Settings } from 'lucide-react'
 
 export function Header() {
   const navigate = useNavigate()
@@ -89,13 +89,19 @@ export function Header() {
                 >
                   个人主页
                 </Link>
-                <Link
-                  to="/profile"
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  设置
-                </Link>
+                {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                  <>
+                    <hr className="my-2 border-slate-100" />
+                    <Link
+                      to="/admin/content"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <Settings className="w-4 h-4" />
+                      管理后台
+                    </Link>
+                  </>
+                )}
                 <hr className="my-2 border-slate-100" />
                 <button
                   onClick={handleLogout}

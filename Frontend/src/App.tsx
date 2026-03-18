@@ -8,6 +8,7 @@ import SearchPage from './pages/SearchPage'
 import PostDetailPage from './pages/PostDetailPage'
 import ProfilePage from './pages/ProfilePage'
 import UserProfilePage from './pages/UserProfilePage'
+import AdminContentPage from './pages/AdminContentPage'
 import { Loader2 } from 'lucide-react'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -83,6 +84,14 @@ export default function App() {
           }
         />
         <Route path="/user/:id" element={<UserProfilePage />} />
+        <Route
+          path="/admin/content"
+          element={
+            <ProtectedRoute>
+              <AdminContentPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </HashRouter>
   )
