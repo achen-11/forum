@@ -122,7 +122,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <CreatePostDrawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} />
+      <CreatePostDrawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} mode="create" />
     </div>
   )
 }

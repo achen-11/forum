@@ -8,16 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { postApi } from '@/api/post'
 import { usePostStore } from '@/stores/postStore'
 import { toast } from '@/lib/toast'
-import type { Tag } from '@/types/post'
+import type { Post, Tag } from '@/types/post'
 import { X, Bold, Italic, Heading2, Link, Quote, Code, Image as ImageIcon, List, ListOrdered } from 'lucide-react'
 import { SplitEditor } from '@/components/SplitEditor'
 
-interface CreatePostDrawerProps {
+interface PostFormDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  mode: 'create' | 'edit'
+  initialData?: Post  // For edit mode
+  onSuccess?: (post: Post) => void  // For edit mode success callback
 }
 
-export function CreatePostDrawer({ open, onOpenChange }: CreatePostDrawerProps) {
+export function PostFormDrawer({ open, onOpenChange, mode, initialData, onSuccess }: PostFormDrawerProps) {
   const navigate = useNavigate()
   const { categories, tags, fetchCategories, fetchTags } = usePostStore()
   const [title, setTitle] = useState('')
@@ -27,6 +30,8 @@ export function CreatePostDrawer({ open, onOpenChange }: CreatePostDrawerProps) 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [content, setContent] = useState('')
 
+  const isEditMode = mode === 'edit'
+
   // Load categories and tags when drawer opens
   useEffect(() => {
     if (open) {
@@ -35,7 +40,7 @@ export function CreatePostDrawer({ open, onOpenChange }: CreatePostDrawerProps) 
     }
   }, [open, fetchCategories, fetchTags])
 
-  // Reset form when drawer closes
+  // Reset form when drawer closes / Initialize form when opening in edit mode
   useEffect(() => {
     if (!open) {
       setTitle('')
@@ -43,8 +48,14 @@ export function CreatePostDrawer({ open, onOpenChange }: CreatePostDrawerProps) 
       setSelectedTags([])
       setNewTagName('')
       setContent('')
+    } else if (isEditMode && initialData) {
+      // Pre-fill data for edit mode (strip HTML tags from content for markdown editor)
+      setTitle(initialData.title || '')
+      setCategoryId(initialData.categoryId || '')
+      setContent(initialData.content?.replace(/<[^>]*>/g, '') || '')
+      // Note: Tags would need to be loaded and matched by name
     }
-  }, [open])
+  }, [open, isEditMode, initialData])
 
   // Insert markdown syntax at cursor position
   const insertMarkdown = useCallback((before: string, after: string = '') => {
@@ -154,16 +165,28 @@ export function CreatePostDrawer({ open, onOpenChange }: CreatePostDrawerProps) 
 
     setIsSubmitting(true)
     try {
-      const post = await postApi.createPost({
-        title: title.trim(),
-        content: htmlContent,
-        categoryId,
-        tags: selectedTags.map(t => t.name),
-      })
-      onOpenChange(false)
-      navigate(`/post/${post._id}`)
+      if (isEditMode && initialData) {
+        // Edit mode
+        const post = await postApi.editPost({
+          postId: initialData._id,
+          title: title.trim(),
+          content: htmlContent,
+        })
+        onOpenChange(false)
+        onSuccess?.(post)
+      } else {
+        // Create mode
+        const post = await postApi.createPost({
+          title: title.trim(),
+          content: htmlContent,
+          categoryId,
+          tags: selectedTags.map(t => t.name),
+        })
+        onOpenChange(false)
+        navigate(`/post/${post._id}`)
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '发帖失败，请重试')
+      toast.error(err instanceof Error ? err.message : (isEditMode ? '编辑失败，请重试' : '发帖失败，请重试'))
     } finally {
       setIsSubmitting(false)
     }
@@ -182,27 +205,29 @@ export function CreatePostDrawer({ open, onOpenChange }: CreatePostDrawerProps) 
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent title="创建新话题">
+      <DrawerContent title={isEditMode ? '编辑话题' : '创建新话题'}>
         <DrawerHeader className="sr-only">
-          <DrawerTitle>创建新话题</DrawerTitle>
+          <DrawerTitle>{isEditMode ? '编辑话题' : '创建新话题'}</DrawerTitle>
         </DrawerHeader>
 
-        {/* Guideline warning */}
-        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2">
-          <p className="text-sm text-amber-800">
-            请在发帖前仔细阅读
-            <button className="underline hover:text-amber-900">《社区准则》</button>
-          </p>
-        </div>
+        {/* Guideline warning - only show in create mode */}
+        {!isEditMode && (
+          <div className="bg-amber-50 border-b border-amber-200 px-6 py-2">
+            <p className="text-sm text-amber-800">
+              请在发帖前仔细阅读
+              <button className="underline hover:text-amber-900">《社区准则》</button>
+            </p>
+          </div>
+        )}
 
-        <div className="flex flex-col h-[calc(70vh-112px)] overflow-hidden">
+        <div className={`flex flex-col ${isEditMode ? 'h-[calc(70vh-92px)]' : 'h-[calc(70vh-112px)]'} overflow-hidden`}>
           {/* Title, Category, Tags row */}
           <div className="py-4 px-1 space-y-3 border-b">
             {/* Title input */}
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="输入标题，或在此处粘贴链接"
+              placeholder={isEditMode ? '输入标题' : '输入标题，或在此处粘贴链接'}
               className="h-10 text-base"
             />
 
@@ -331,7 +356,7 @@ export function CreatePostDrawer({ open, onOpenChange }: CreatePostDrawerProps) 
               disabled={isSubmitting}
               className="bg-indigo-600 hover:bg-indigo-700"
             >
-              {isSubmitting ? '发布中...' : '+ 创建话题'}
+              {isSubmitting ? (isEditMode ? '保存中...' : '发布中...') : (isEditMode ? '保存' : '+ 创建话题')}
             </Button>
           </DrawerFooter>
         </div>
@@ -339,3 +364,6 @@ export function CreatePostDrawer({ open, onOpenChange }: CreatePostDrawerProps) 
     </Drawer>
   )
 }
+
+// Backward compatibility alias
+export { PostFormDrawer as CreatePostDrawer }

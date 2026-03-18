@@ -1,12 +1,140 @@
 # 组件开发规范
 
-> 本项目的 Vue 组件开发规范。
+> 本项目的 React 组件开发规范。
 
 ---
 
 ## 概述
 
-本项目使用 Vue 3 + Composition API 开发组件，采用 `<script setup>` 语法。
+本项目使用 React + TypeScript 开发组件，采用函数式组件 + Hooks 模式。
+
+### 技术栈
+
+| 技术 | 说明 |
+|------|------|
+| React 18 | 前端框架 |
+| TypeScript | 类型系统 |
+| TailwindCSS | 样式框架 |
+| shadcn/ui | UI 组件库 |
+| Radix UI | 无样式组件库 |
+| Lucide React | 图标库 |
+
+---
+
+## UI 组件使用规范
+
+### 优先使用 shadcn/ui 组件
+
+**【强制】** 所有 UI 交互组件必须使用 shadcn/ui 组件，禁止使用原生 `alert`、`confirm`、`prompt` 等方法。
+
+| 原生方法 | 必须使用 |
+|---------|---------|
+| `alert()` | shadcn/ui `Dialog` 或自定义 `ConfirmDialog` |
+| `confirm()` | shadcn/ui `Dialog` 或自定义 `ConfirmDialog` |
+| `prompt()` | shadcn/ui `Dialog` + `Input` |
+
+### 已有 shadcn/ui 组件列表
+
+位于 `Frontend/src/components/ui/` 目录下：
+
+| 组件 | 文件 | 用途 |
+|------|------|------|
+| Button | `button.tsx` | 按钮 |
+| Input | `input.tsx` | 输入框 |
+| Dialog | `dialog.tsx` | 对话框（可扩展为确认框） |
+| Drawer | `drawer.tsx` | 抽屉 |
+| Select | `select.tsx` | 选择器 |
+| Avatar | `avatar.tsx` | 头像 |
+| Badge | `badge.tsx` | 标签 |
+| Card | `card.tsx` | 卡片 |
+
+### ConfirmDialog 封装
+
+对于常见的确认操作（如删除），应封装 `ConfirmDialog` 组件：
+
+```tsx
+// components/ui/confirm-dialog.tsx
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+
+interface ConfirmDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description: string
+  confirmText?: string
+  cancelText?: string
+  onConfirm: () => void
+  variant?: 'default' | 'destructive'
+}
+
+export function ConfirmDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmText = '确认',
+  cancelText = '取消',
+  onConfirm,
+  variant = 'default',
+}: ConfirmDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {cancelText}
+          </Button>
+          <Button
+            variant={variant === 'destructive' ? 'destructive' : 'default'}
+            onClick={() => {
+              onConfirm()
+              onOpenChange(false)
+            }}
+          >
+            {confirmText}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+```
+
+### 使用示例
+
+```tsx
+// ❌ 禁止使用
+if (confirm('确定要删除吗？')) {
+  deleteItem()
+}
+
+// ✅ 正确使用
+const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+
+<ConfirmDialog
+  open={deleteDialogOpen}
+  onOpenChange={setDeleteDialogOpen}
+  title="删除确认"
+  description="确定要删除这项吗？此操作不可恢复。"
+  confirmText="删除"
+  variant="destructive"
+  onConfirm={() => deleteItem()}
+/>
+```
+
+---
 
 ---
 

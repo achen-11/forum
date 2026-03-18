@@ -39,22 +39,15 @@ export const useAuthStore = create<AuthState>()(
         try {
           const res = await authApi.login(data)
           // http 拦截器已经处理了响应格式，直接返回 data
+          // 先设置基本用户信息，token 设置后 http 拦截器会自动带上
           set({
-            user: {
-              _id: res.userId,
-              userName: res.userName,
-              displayName: res.name,
-              phone: res.phone,
-              email: res.email,
-              avatar: '',
-              role: 'user',
-              createdAt: Date.now(),
-              lastLoginAt: Date.now(),
-            },
             token: res.token,
             isAuthenticated: true,
             isLoading: false,
           })
+          // 然后获取完整的用户信息（包含 role）
+          const fullUser = await authApi.getCurrentUser()
+          set({ user: fullUser })
           return true
         } catch (error: unknown) {
           const message = error instanceof Error ? error.message : '登录失败'
@@ -109,21 +102,13 @@ export const useAuthStore = create<AuthState>()(
           const res = await authApi.register(data)
           // http 拦截器已经处理了响应格式，直接返回 data
           set({
-            user: {
-              _id: res.userId,
-              userName: res.userName,
-              displayName: res.name,
-              phone: res.phone,
-              email: res.email,
-              avatar: '',
-              role: 'user',
-              createdAt: Date.now(),
-              lastLoginAt: Date.now(),
-            },
             token: res.token,
             isAuthenticated: true,
             isLoading: false,
           })
+          // 获取完整的用户信息（包含 role）
+          const fullUser = await authApi.getCurrentUser()
+          set({ user: fullUser })
           return true
         } catch (error: unknown) {
           const message = error instanceof Error ? error.message : '注册失败'

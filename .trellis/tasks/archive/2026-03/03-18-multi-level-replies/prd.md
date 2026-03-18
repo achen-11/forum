@@ -11,21 +11,24 @@
 
 ### 后端现状
 - `Forum_Reply` 模型已有 `parentId` 字段支持嵌套
-- `reply/create` API 已支持 `parentId` 参数
 - `Forum_User` 模型有 `role` 字段（默认 'user'）
 
+### 新增字段
+```typescript
+// Forum_Reply 表
+rootReplyId: string  // 顶级回复的_id，顶级回复此字段为空或等于自己的_id
+```
+
 ### 前端现状
-- `ReplyDrawer` 只支持一级回复（无 parentId）
-- `PostDetailPage` 评论列表是扁平展示
-- 回复类型已定义 `parentId` 字段
-- 帖子暂无编辑功能
+- 树形嵌套结构处理复杂
+- 需要递归组装 children
 
 ## Confirmed Requirements
 
 ### 1. 多级回复
-- [ ] 前端评论列表支持嵌套显示（最多 2 层）
-- [ ] 楼内回复显示"回复 XXX"（被回复者用户名）
-- [ ] 支持对一级回复进行二级回复
+- [ ] 前端评论列表支持嵌套显示
+- [ ] 楼内回复（3级+）显示"回复 XXX"（被回复者用户名）
+- [ ] 收起/展开功能：显示"查看 N 条回复"，默认收起
 
 ### 2. 删除权限
 - [ ] 后端添加帖子删除 API（含权限校验）
@@ -52,6 +55,11 @@
 
 ### 4. 管理员特殊标记
 - [ ] 管理员头像/名字旁显示标识（如：👑 或 "管理员" 标签）
+
+### 5. rootReplyId 字段
+- [ ] Forum_Reply 表添加 `rootReplyId` 字段
+- [ ] 创建回复时自动填充 `rootReplyId`
+- [ ] 查询接口返回扁平结构，前端按 `rootReplyId` 分组组装
 
 ## Acceptance Criteria
 
