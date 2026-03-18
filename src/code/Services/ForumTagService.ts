@@ -108,6 +108,31 @@ export class ForumTagService {
     }
 
     /**
+     * 按标签名称搜索帖子
+     * @param tagName 标签名称
+     * @param page 页码
+     * @param pageSize 每页数量
+     */
+    static searchByTagName(tagName: string, page: number = 1, pageSize: number = 10) {
+        // 先根据名称查找标签
+        const tag = Forum_Tag.findOne({ name: tagName })
+        if (!tag) {
+            return {
+                list: [],
+                pagination: {
+                    page: Math.max(1, page),
+                    pageSize: Math.min(50, Math.max(1, pageSize)),
+                    total: 0,
+                    totalPages: 0
+                }
+            }
+        }
+
+        // 调用已有的 searchByTag 方法
+        return this.searchByTag(tag._id, page, pageSize)
+    }
+
+    /**
      * 按标签搜索帖子
      * @param tagId 标签 ID
      * @param page 页码

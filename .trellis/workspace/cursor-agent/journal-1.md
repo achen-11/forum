@@ -235,3 +235,35 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: 首页搜索增强 - tag 和分类筛选
+
+**Date**: 2026-03-17
+**Task**: 首页搜索增强 - tag 和分类筛选
+
+### Summary
+
+实现首页搜索增强功能：1) 后端新增 tag 名称搜索 API；2) 搜索页重构为与首页布局一致；3) 支持 tag + category 叠加筛选；4) 首页适配 URL category 参数
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d627ddc` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

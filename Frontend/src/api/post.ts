@@ -74,10 +74,16 @@ export const postApi = {
    * @param categoryId 可选的分类 ID
    * @param page 页码
    * @param pageSize 每页数量
+   * @param tag 标签名称（与 keyword 二选一）
    */
-  searchPosts: async (keyword: string, categoryId?: string, page: number = 1, pageSize: number = 10): Promise<SearchResponse> => {
+  searchPosts: async (keyword: string, categoryId?: string, page: number = 1, pageSize: number = 10, tag?: string): Promise<SearchResponse> => {
     const params = new URLSearchParams()
-    params.set('keyword', keyword)
+    if (keyword) {
+      params.set('keyword', keyword)
+    }
+    if (tag) {
+      params.set('tag', tag)
+    }
     if (categoryId) params.set('categoryId', categoryId)
     params.set('page', String(page))
     params.set('pageSize', String(pageSize))

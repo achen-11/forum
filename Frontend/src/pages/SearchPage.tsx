@@ -1,32 +1,15 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams, useNavigate, Link } from 'react-router-dom'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { useAuthStore } from '@/stores/authStore'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
 import { usePostStore } from '@/stores/postStore'
 import { postApi } from '@/api/post'
 import { HomeSidebar } from '@/components/HomeSidebar'
-import { Bell, ChevronDown, Loader2, Search, ArrowLeft, MessageCircle, Heart, Pin, Bookmark } from 'lucide-react'
+import { Header } from '@/components/Header'
+import { Plus, X, Search, Hash, Folder } from 'lucide-react'
 import type { Post, SearchPagination } from '@/types/post'
 
-// 高亮关键词
-function highlightKeyword(text: string, keyword: string): React.ReactNode {
-  if (!keyword || !text) return text
+type SortOption = 'recent' | 'popular' | 'unanswered'
 
-  const parts = text.split(new RegExp(`(${keyword})`, 'gi'))
-  if (parts.length === 1) return text
-
-  return parts.map((part, i) =>
-    part.toLowerCase() === keyword.toLowerCase() ? (
-      <mark key={i} className="bg-indigo-100 text-indigo-700 p-1 mx-0.5 rounded font-medium">
-        {part}
-      </mark>
-    ) : (
-      part
-    )
-  )
-}
-
-// 格式化日期
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
   const now = new Date()
@@ -42,59 +25,40 @@ function formatDate(dateString: string): string {
   return date.toLocaleDateString('zh-CN')
 }
 
-// 搜索结果项（带高亮）
-function SearchPostItem({ post, keyword, onClick }: { post: Post; keyword: string; onClick: () => void }) {
+function SearchPostItem({ post, onClick }: { post: Post; onClick: () => void }) {
   return (
     <article
       onClick={onClick}
-      className={`bg-white rounded-xl shadow-sm border p-5 cursor-pointer hover:shadow-md transition-all group ${
-        post.isPinned ? 'border-indigo-200 hover:border-indigo-300' : 'border-slate-100 hover:border-slate-200'
-      }`}
+      className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 cursor-pointer hover:shadow-md transition-all group"
     >
       <div className="flex gap-4">
         <div className="shrink-0">
-          <Avatar className="w-10 h-10">
-            {post.author?.avatar ? (
-              <AvatarImage src={post.author.avatar} alt="" />
-            ) : null}
-            <AvatarFallback className="bg-slate-200 text-slate-600">
-              {(post.author?.userName || post.author?.displayName || '?').slice(0, 1).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+            <span className="text-slate-600 font-medium">
+              {(post.author?.displayName || post.author?.userName || '?').slice(0, 1).toUpperCase()}
+            </span>
+          </div>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2 text-sm text-slate-500">
-              {post.author?._id ? (
-                <Link
-                  to={`/user/${post.author._id}`}
-                  className="font-medium text-slate-900 hover:text-indigo-600"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {post.author?.displayName || post.author?.userName || '匿名用户'}
-                </Link>
-              ) : (
-                <span className="font-medium text-slate-900">
-                  {post.author?.displayName || post.author?.userName || '匿名用户'}
-                </span>
-              )}
+              <span className="font-medium text-slate-900 group-hover:text-indigo-600">
+                {post.author?.displayName || post.author?.userName || '匿名用户'}
+              </span>
               <span>·</span>
               <span>{formatDate(post.createdAt)}</span>
             </div>
             {post.isPinned && (
               <div className="flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                <Pin className="w-3 h-3" />
                 置顶
               </div>
             )}
           </div>
           <h3 className="text-base font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors mb-2">
-            {highlightKeyword(post.title, keyword)}
+            {post.title}
           </h3>
           {post.summary && (
-            <p className="text-sm text-slate-500 line-clamp-2 mb-3">
-              {highlightKeyword(post.summary, keyword)}
-            </p>
+            <p className="text-sm text-slate-500 line-clamp-2 mb-3">{post.summary}</p>
           )}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -103,22 +67,23 @@ function SearchPostItem({ post, keyword, onClick }: { post: Post; keyword: strin
                   {post.category.name}
                 </span>
               )}
+              {post.tags && post.tags.length > 0 && (
+                <div className="flex gap-1">
+                  {post.tags.slice(0, 3).map((tag) => (
+                    <span
+                      key={tag._id}
+                      className="px-2 py-0.5 text-xs rounded-full text-white"
+                      style={{ backgroundColor: tag.color || '#6366f1' }}
+                    >
+                      #{tag.name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-4 text-sm text-slate-400">
-              <div className="flex items-center gap-1 hover:text-red-500">
-                <Heart className="w-4 h-4" />
-                <span>{post.likeCount || 0}</span>
-              </div>
-              <div className="flex items-center gap-1 hover:text-indigo-600">
-                <MessageCircle className="w-4 h-4" />
-                <span>{post.replyCount || 0}</span>
-              </div>
-              <button
-                className="p-1 hover:text-indigo-600"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Bookmark className="w-4 h-4" />
-              </button>
+              <span>{post.viewCount || 0} 浏览</span>
+              <span>{post.replyCount || 0} 回复</span>
             </div>
           </div>
         </div>
@@ -127,240 +92,217 @@ function SearchPostItem({ post, keyword, onClick }: { post: Post; keyword: strin
   )
 }
 
+function FilterTag({ icon: Icon, label, onRemove }: {
+  icon: React.ElementType
+  label: string
+  onRemove: () => void
+}) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm">
+      <Icon className="w-4 h-4" />
+      <span className="font-medium">{label}</span>
+      <button onClick={onRemove} className="ml-1 p-0.5 hover:bg-indigo-100 rounded" title="清除">
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  )
+}
+
 export default function SearchPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { user } = useAuthStore()
-  const { categories, tags, selectedCategoryId, fetchCategories, fetchTags, setSelectedCategory } = usePostStore()
+  const { categories, tags, fetchCategories, fetchTags, setSelectedCategory } = usePostStore()
 
   const keyword = searchParams.get('keyword') || ''
+  const tag = searchParams.get('tag') || ''
   const categoryId = searchParams.get('categoryId') || ''
   const page = parseInt(searchParams.get('page') || '1', 10)
 
   const [posts, setPosts] = useState<Post[]>([])
   const [pagination, setPagination] = useState<SearchPagination | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [showUserMenu, setShowUserMenu] = useState(false)
-  const [searchInput, setSearchInput] = useState(keyword)
+  const [sortBy, setSortBy] = useState<SortOption>('recent')
 
   useEffect(() => {
     fetchCategories()
     fetchTags()
   }, [fetchCategories, fetchTags])
 
+  // Sync category from URL to store
   useEffect(() => {
-    if (!keyword) {
-      setIsLoading(false)
-      return
-    }
+    setSelectedCategory(categoryId || null)
+  }, [categoryId, setSelectedCategory])
 
+  // Search/filter
+  useEffect(() => {
     setIsLoading(true)
-    setError('')
 
-    postApi
-      .searchPosts(keyword, categoryId || undefined, page, 10)
-      .then((res) => {
-        setPosts(res.list)
-        setPagination(res.pagination)
-      })
-      .catch((err) => {
-        setError(err.message || '搜索失败，请稍后重试')
-      })
-      .finally(() => {
+    const doSearch = async () => {
+      try {
+        if (keyword) {
+          const res = await postApi.searchPosts(keyword, categoryId || undefined, page, 10)
+          setPosts(res.list)
+          setPagination(res.pagination)
+        } else if (tag) {
+          const res = await postApi.searchPosts('', categoryId || undefined, page, 10, tag)
+          setPosts(res.list)
+          setPagination(res.pagination)
+        } else if (categoryId) {
+          const res = await postApi.getPostList(categoryId)
+          setPosts(res)
+          setPagination(null)
+        } else {
+          const res = await postApi.getPostList()
+          setPosts(res)
+          setPagination(null)
+        }
+      } catch (error) {
+        console.error('Search error:', error)
+      } finally {
         setIsLoading(false)
-      })
-  }, [keyword, categoryId, page])
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchInput.trim()) {
-      navigate(`/search?keyword=${encodeURIComponent(searchInput.trim())}`)
+      }
     }
+
+    doSearch()
+  }, [keyword, tag, categoryId, page])
+
+  // Build URL with existing params
+  const buildUrl = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams)
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) {
+        params.delete(key)
+      } else {
+        params.set(key, value)
+      }
+    })
+    const qs = params.toString()
+    return qs ? `/search?${qs}` : '/search'
   }
 
-  const handlePageChange = (newPage: number) => {
-    const params = new URLSearchParams(searchParams)
-    params.set('page', String(newPage))
-    navigate(`/search?${params.toString()}`)
+  const handleClearAll = () => navigate('/')
+  const handleRemoveKeyword = () => navigate(buildUrl({ keyword: null }))
+  const handleRemoveTag = () => navigate(buildUrl({ tag: null }))
+  const handleRemoveCategory = () => navigate(buildUrl({ categoryId: null }))
+
+  // Handle category click from sidebar
+  const handleCategorySelect = (id: string | null) => {
+    setSelectedCategory(id)
+    navigate(buildUrl({ categoryId: id }))
   }
+
+  const hasFilter = keyword || tag || categoryId
+  const filterCount = [keyword ? 1 : 0, tag ? 1 : 0, categoryId ? 1 : 0].reduce((a, b) => a + b, 0)
 
   return (
     <div className="min-h-screen bg-[#f6f6f8]">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <Link to="/" className="flex items-center gap-2 text-indigo-600">
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">F</span>
-              </div>
-              <h1 className="text-xl font-bold text-slate-900 hidden sm:block">Kooboo Forum</h1>
-            </Link>
-          </div>
-
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="hidden md:flex relative w-64 lg:w-96">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-              <Search className="w-4 h-4" />
-            </span>
-            <input
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="搜索讨论、标签或用户..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
-            />
-          </form>
-
-          {/* Right */}
-          <div className="flex items-center gap-3">
-            {/* Notifications */}
-            <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg relative">
-              <Bell className="w-5 h-5" />
-            </button>
-
-            <div className="h-6 w-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
-
-            {/* User Menu */}
-            <div className="relative flex items-center gap-3 pl-1">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold">{user?.displayName || user?.userName || '用户'}</p>
-              </div>
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-1 hover:bg-slate-100 rounded-lg p-1"
-              >
-                <Avatar className="w-8 h-8">
-                  {user?.avatar ? (
-                    <AvatarImage src={user.avatar} alt="" />
-                  ) : null}
-                  <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm">
-                    {(user?.displayName || user?.userName || '?').slice(0, 1).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <ChevronDown className="w-4 h-4 text-slate-400" />
-              </button>
-
-              {/* Dropdown Menu */}
-              {showUserMenu && (
-                <div className="absolute right-0 top-full mt-2 bg-white rounded-lg shadow-lg border border-slate-200 py-2 min-w-[160px] z-50">
-                  <Link
-                    to="/profile"
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                    onClick={() => setShowUserMenu(false)}
-                  >
-                    个人主页
-                  </Link>
-                  <Link
-                    to="/profile"
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                    onClick={() => setShowUserMenu(false)}
-                  >
-                    设置
-                  </Link>
-                  <hr className="my-2 border-slate-100" />
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false)
-                      navigate('/login')
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full"
-                  >
-                    退出登录
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+      <Header />
       <main className="max-w-7xl mx-auto px-4">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* 左侧边栏 */}
           <HomeSidebar
             categories={categories}
             tags={tags}
-            selectedCategoryId={selectedCategoryId}
-            onSelectCategory={(id) => {
-              setSelectedCategory(id)
-              if (id) {
-                navigate(`/search?keyword=${keyword}&categoryId=${id}`)
-              } else {
-                navigate(`/search?keyword=${keyword}`)
-              }
-            }}
+            selectedCategoryId={categoryId || null}
+            onSelectCategory={handleCategorySelect}
           />
-
-          {/* 右侧搜索结果 */}
           <section className="flex-1 space-y-6 my-8">
-            {/* 搜索结果标题 */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-              <div className="flex items-center gap-2">
-                <Link to="/" className="p-2 hover:bg-slate-100 rounded-lg">
-                  <ArrowLeft className="w-5 h-5 text-slate-500" />
-                </Link>
-                <h2 className="text-lg font-semibold">
-                  搜索结果: <span className="text-indigo-600">"{keyword}"</span>
-                </h2>
-                {pagination && (
-                  <span className="text-sm text-slate-400 ml-2">
-                    找到 {pagination.total} 个结果
-                  </span>
-                )}
+            {/* Second row: Sort tabs and post button */}
+            <div className="flex items-center justify-between">
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setSortBy('recent')}
+                  className={`text-sm font-semibold pb-1 ${sortBy === 'recent' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  最新
+                </button>
+                <button
+                  onClick={() => setSortBy('popular')}
+                  className={`text-sm font-medium pb-1 ${sortBy === 'popular' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  热门
+                </button>
+                <button
+                  onClick={() => setSortBy('unanswered')}
+                  className={`text-sm font-medium pb-1 ${sortBy === 'unanswered' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  待回复
+                </button>
               </div>
+              <Button className="gap-1.5 bg-indigo-600 hover:bg-indigo-700" onClick={() => navigate('/post/new')}>
+                <Plus className="w-4 h-4" />
+                发帖
+              </Button>
             </div>
 
-            {/* 搜索结果列表 */}
+            {/* First row: Filter tags */}
+            {hasFilter && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {keyword && (
+                  <FilterTag icon={Search} label={`搜索: ${keyword}`} onRemove={handleRemoveKeyword} />
+                )}
+                {tag && (
+                  <FilterTag icon={Hash} label={`标签: ${tag}`} onRemove={handleRemoveTag} />
+                )}
+                {categoryId && (
+                  <FilterTag
+                    icon={Folder}
+                    label={`分类: ${categories.find(c => c._id === categoryId)?.name || '未知'}`}
+                    onRemove={handleRemoveCategory}
+                  />
+                )}
+                {filterCount > 1 && (
+                  <button onClick={handleClearAll} className="text-sm text-slate-500 hover:text-slate-700 underline">
+                    清除全部
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Results */}
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
-                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-              </div>
-            ) : error ? (
-              <div className="bg-white rounded-xl shadow-sm border border-red-100 p-8 text-center">
-                <p className="text-red-500">{error}</p>
+                <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
               </div>
             ) : posts.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-8 text-center">
                 <Search className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                 <p className="text-slate-400">未找到相关帖子</p>
-                <p className="text-sm text-slate-400 mt-1">试试其他关键词</p>
+                <p className="text-sm text-slate-400 mt-1">试试其他关键词或筛选条件</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {posts.map((post) => (
-                  <SearchPostItem
-                    key={post._id}
-                    post={post}
-                    keyword={keyword}
-                    onClick={() => navigate(`/post/${post._id}`)}
-                  />
+                  <SearchPostItem key={post._id} post={post} onClick={() => navigate(`/post/${post._id}`)} />
                 ))}
               </div>
             )}
 
-            {/* 分页 */}
+            {/* Pagination */}
             {pagination && pagination.totalPages > 1 && (
               <div className="flex justify-center gap-2">
-                <button
-                  onClick={() => handlePageChange(page - 1)}
+                <Button
+                  variant="outline"
                   disabled={page <= 1}
-                  className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams)
+                    params.set('page', String(page - 1))
+                    navigate(`/search?${params.toString()}`)
+                  }}
                 >
                   上一页
-                </button>
-                <span className="px-4 py-2 text-sm text-slate-500">
-                  {page} / {pagination.totalPages}
-                </span>
-                <button
-                  onClick={() => handlePageChange(page + 1)}
+                </Button>
+                <span className="px-4 py-2 text-sm text-slate-500">{page} / {pagination.totalPages}</span>
+                <Button
+                  variant="outline"
                   disabled={page >= pagination.totalPages}
-                  className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams)
+                    params.set('page', String(page + 1))
+                    navigate(`/search?${params.toString()}`)
+                  }}
                 >
                   下一页
-                </button>
+                </Button>
               </div>
             )}
           </section>
