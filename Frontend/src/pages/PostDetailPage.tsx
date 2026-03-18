@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { postApi } from '@/api/post'
 import type { Post, Reply } from '@/types/post'
-import { ArrowLeft, Eye, MessageCircle, Clock, Send, ArrowUpDown, Heart, Bookmark, Share2, ChevronRight, Users, BookOpen, Shield } from 'lucide-react'
+import { ArrowLeft, Eye, MessageCircle, Clock, ArrowUpDown, Heart, Bookmark, Share2, ChevronRight, Users, BookOpen, Shield } from 'lucide-react'
 import { Hash } from 'lucide-react'
 import { Header } from '@/components/Header'
+import { ReplyDrawer } from '@/components/ReplyDrawer'
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -17,9 +18,8 @@ export default function PostDetailPage() {
   const [relatedPosts, setRelatedPosts] = useState<Post[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
-  const [replyContent, setReplyContent] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC')
+  const [isReplyDrawerOpen, setIsReplyDrawerOpen] = useState(false)
 
   // 互动状态
   const [isLiked, setIsLiked] = useState(false)
@@ -114,31 +114,16 @@ export default function PostDetailPage() {
     setIsFollowing(!isFollowing)
   }
 
-  // 提交评论
-  const handleSubmitReply = async () => {
-    if (!replyContent.trim() || !id) return
-
-    setIsSubmitting(true)
-    try {
-      const newReply = await postApi.createReply({
-        postId: id,
-        content: replyContent.trim(),
-      })
-      // 更新评论列表
-      if (sortOrder === 'DESC') {
-        setReplies([newReply, ...replies])
-      } else {
-        setReplies([...replies, newReply])
-      }
-      setReplyContent('')
-      // 更新帖子评论数
-      if (post) {
-        setPost({ ...post, replyCount: post.replyCount + 1 })
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '评论失败')
-    } finally {
-      setIsSubmitting(false)
+  // 回复成功回调
+  const handleReplySuccess = (newReply: Reply) => {
+    if (sortOrder === 'DESC') {
+      setReplies([newReply, ...replies])
+    } else {
+      setReplies([...replies, newReply])
+    }
+    // 更新帖子评论数
+    if (post) {
+      setPost({ ...post, replyCount: post.replyCount + 1 })
     }
   }
 
@@ -366,25 +351,15 @@ export default function PostDetailPage() {
                 </Button>
               </div>
 
-              {/* 评论输入框 */}
+              {/* 回复按钮 */}
               <div className="mb-6">
-                <textarea
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                  placeholder="写下你的评论..."
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                  rows={3}
-                />
-                <div className="flex justify-end mt-2">
-                  <Button
-                    onClick={handleSubmitReply}
-                    disabled={!replyContent.trim() || isSubmitting}
-                    className="bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    {isSubmitting ? '提交中...' : '发表评论'}
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => setIsReplyDrawerOpen(true)}
+                  className="bg-indigo-600 hover:bg-indigo-700"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  回复帖子
+                </Button>
               </div>
 
               {/* 评论列表 */}
@@ -544,6 +519,13 @@ export default function PostDetailPage() {
           </aside>
         </div>
       </main>
+
+      <ReplyDrawer
+        open={isReplyDrawerOpen}
+        onOpenChange={setIsReplyDrawerOpen}
+        postId={id || ''}
+        onReplySuccess={handleReplySuccess}
+      />
     </div>
   )
 }

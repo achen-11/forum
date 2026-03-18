@@ -5,6 +5,7 @@ import { usePostStore } from '@/stores/postStore'
 import { HomeSidebar } from '@/components/HomeSidebar'
 import { PostList } from '@/components/PostList'
 import { Header } from '@/components/Header'
+import { CreatePostDrawer } from '@/components/CreatePostDrawer'
 import { Plus, X, Folder } from 'lucide-react'
 
 type SortOption = 'recent' | 'popular' | 'unanswered'
@@ -14,6 +15,7 @@ export default function HomePage() {
   const [searchParams] = useSearchParams()
   const { categories, tags, selectedCategoryId, fetchCategories, fetchTags, fetchPosts, setSelectedCategory } = usePostStore()
   const [sortBy, setSortBy] = useState<SortOption>('recent')
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
   const categoryParam = searchParams.get('category')
 
@@ -109,7 +111,7 @@ export default function HomePage() {
                   待回复
                 </button>
               </div>
-              <Button className="gap-1.5 bg-indigo-600 hover:bg-indigo-700" onClick={() => navigate('/post/new')}>
+              <Button className="gap-1.5 bg-indigo-600 hover:bg-indigo-700" onClick={() => setIsDrawerOpen(true)}>
                 <Plus className="w-4 h-4" />
                 发帖
               </Button>
@@ -119,6 +121,8 @@ export default function HomePage() {
           </section>
         </div>
       </main>
+
+      <CreatePostDrawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} />
     </div>
   )
 }

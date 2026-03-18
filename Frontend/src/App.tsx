@@ -5,7 +5,6 @@ import { useAuthStore } from './stores/authStore'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
-import CreatePostPage from './pages/CreatePostPage'
 import PostDetailPage from './pages/PostDetailPage'
 import ProfilePage from './pages/ProfilePage'
 import UserProfilePage from './pages/UserProfilePage'
@@ -64,14 +63,6 @@ export default function App() {
           element={
             <ProtectedRoute>
               <HomePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/post/new"
-          element={
-            <ProtectedRoute>
-              <CreatePostPage />
             </ProtectedRoute>
           }
         />
