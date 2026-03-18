@@ -53,6 +53,7 @@ export interface Reply {
   _id: string
   postId: string
   parentId: string
+  rootReplyId: string
   authorId: string
   author?: UserInfo
   content: string

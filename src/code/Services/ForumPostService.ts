@@ -189,15 +189,31 @@ export class ForumPostService {
      * @param parentId 父评论 ID（可选，用于回复）
      */
     static createReply(postId: string, content: string, authorId: string, parentId: string = '') {
+        // 确定 rootReplyId
+        let rootReplyId = ''
+        if (parentId) {
+            // 非顶级回复，查找父回复的 rootReplyId
+            const parentReply = Forum_Reply.findById(parentId)
+            if (parentReply) {
+                rootReplyId = parentReply.rootReplyId || parentReply._id
+            }
+        }
+
         const replyId = Forum_Reply.create({
             postId,
             content,
             authorId,
-            parentId
+            parentId,
+            rootReplyId
         })
 
         if (!replyId) {
             throw new Error('创建评论失败')
+        }
+
+        // 如果是顶级回复，更新 rootReplyId 为自己的 _id
+        if (!parentId) {
+            Forum_Reply.updateById(replyId, { rootReplyId: replyId } as any)
         }
 
         // 更新帖子评论数
@@ -220,13 +236,31 @@ export class ForumPostService {
             author = Forum_User.findOne({ _id: reply.authorId })
         }
 
+        // 获取被回复者信息（如果是对回复的回复）
+        let replyTo = null
+        if (reply.parentId) {
+            const parentReply = Forum_Reply.findById(reply.parentId)
+            if (parentReply) {
+                const parentAuthor = Forum_User.findOne({ _id: parentReply.authorId })
+                if (parentAuthor) {
+                    replyTo = {
+                        _id: parentAuthor._id,
+                        displayName: parentAuthor.displayName,
+                        userName: parentAuthor.userName
+                    }
+                }
+            }
+        }
+
         return {
             ...reply,
+            replyTo,
             author: author ? {
                 _id: author._id,
                 userName: author.userName,
                 displayName: author.displayName,
-                avatar: author.avatar
+                avatar: author.avatar,
+                role: author.role
             } : null
         }
     }
@@ -241,20 +275,37 @@ export class ForumPostService {
             order: [{ prop: 'createdAt', order: sortOrder }]
         })
 
-        // 关联查询作者信息
+        // 关联查询作者信息和被回复者信息
         const repliesWithAuthor = replies.map(reply => {
             let author = null
             if (reply.authorId) {
                 author = Forum_User.findOne({ _id: reply.authorId })
             }
 
+            let replyTo = null
+            if (reply.parentId) {
+                const parentReply = Forum_Reply.findById(reply.parentId)
+                if (parentReply) {
+                    const parentAuthor = Forum_User.findOne({ _id: parentReply.authorId })
+                    if (parentAuthor) {
+                        replyTo = {
+                            _id: parentAuthor._id,
+                            displayName: parentAuthor.displayName,
+                            userName: parentAuthor.userName
+                        }
+                    }
+                }
+            }
+
             return {
                 ...reply,
+                replyTo,
                 author: author ? {
                     _id: author._id,
                     userName: author.userName,
                     displayName: author.displayName,
-                    avatar: author.avatar
+                    avatar: author.avatar,
+                    role: author.role
                 } : null
             }
         })
@@ -745,7 +796,7 @@ export class ForumPostService {
 
         // 为每个一级回复添加 children
         return topLevelReplies.map(reply => {
-            const children = childReplies.filter(r => r.parentId === reply._id)
+            const children = childReplies.filter(r => r.rootReplyId === reply._id)
             return {
                 ...reply,
                 children: children.map(child => {

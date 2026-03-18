@@ -2,17 +2,147 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { postApi } from '@/api/post'
 import type { Post, Reply } from '@/types/post'
 import { ArrowLeft, Eye, MessageCircle, Clock, ArrowUpDown, Heart, Bookmark, Share2, ChevronRight, Users, BookOpen, Shield, Trash2, Edit } from 'lucide-react'
 import { Hash } from 'lucide-react'
 import { Header } from '@/components/Header'
 import { ReplyDrawer } from '@/components/ReplyDrawer'
+import { PostFormDrawer } from '@/components/CreatePostDrawer'
 import { useAuthStore } from '@/stores/authStore'
 import { toast } from '@/lib/toast'
-import { Drawer, DrawerContent } from '@/components/ui/drawer'
-import { SplitEditor } from '@/components/SplitEditor'
-import { marked } from 'marked'
+
+// ==================== Reply Components ====================
+
+interface ReplyItemProps {
+  reply: Reply
+  rootReplyId: string  // 顶级回复的 _id，用于判断是否显示"回复 XXX"
+  onDelete: (replyId: string) => void
+  canManage: (authorId?: string) => boolean
+  onReply: (parentId: string, replyToName: string) => void
+}
+
+// 格式化时间
+const formatTime = (time: string) => {
+  const date = new Date(time)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes}分钟前`
+  if (hours < 24) return `${hours}小时前`
+  if (days < 7) return `${days}天前`
+  return date.toLocaleDateString('zh-CN')
+}
+
+// 获取名字首字母
+const getInitials = (name?: string) => name?.slice(0, 2).toUpperCase() || '?'
+
+// 回复项组件
+const ReplyItem = ({ reply, rootReplyId, onDelete, canManage, onReply }: ReplyItemProps) => {
+  const isChildOfRoot = reply.parentId === rootReplyId  // 是否是顶级回复的直接子回复（二级回复）
+  const showReplyTo = !isChildOfRoot  // 3+级回复显示"回复 XXX"
+
+  return (
+    <div className="flex gap-3 p-4 bg-slate-50 rounded-lg">
+      {/* 头像 */}
+      {reply.author?._id ? (
+        <Link to={`/user/${reply.author._id}`} className="shrink-0">
+          <Avatar className="w-8 h-8 hover:opacity-80">
+            {reply.author?.avatar ? <AvatarImage src={reply.author.avatar} alt="" /> : null}
+            <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm">
+              {getInitials(reply.author?.displayName || reply.author?.userName)}
+            </AvatarFallback>
+          </Avatar>
+        </Link>
+      ) : (
+        <Avatar className="w-8 h-8 shrink-0">
+          {reply.author?.avatar ? <AvatarImage src={reply.author.avatar} alt="" /> : null}
+          <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm">
+            {getInitials(reply.author?.displayName || reply.author?.userName)}
+          </AvatarFallback>
+        </Avatar>
+      )}
+
+      <div className="flex-1 min-w-0">
+        {/* 用户名 + 时间 + 按钮 */}
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          {reply.author?._id ? (
+            <Link
+              to={`/user/${reply.author._id}`}
+              className="font-medium text-slate-900 text-sm hover:underline flex items-center gap-1"
+            >
+              {reply.author?.displayName || reply.author?.userName || '未知用户'}
+              {reply.author?.role === 'admin' && (
+                <span className="px-1 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">管理员</span>
+              )}
+            </Link>
+          ) : (
+            <span className="font-medium text-slate-900 text-sm">
+              {reply.author?.displayName || reply.author?.userName || '未知用户'}
+            </span>
+          )}
+          <span className="text-xs text-slate-400">{formatTime(reply.createdAt)}</span>
+
+          {/* 按钮区域 */}
+          <div className="flex items-center gap-2 ml-auto">
+            {/* 3+级回复显示"回复 XXX" */}
+            {showReplyTo && (
+              <span className="text-xs text-slate-400">
+                回复 {reply.replyTo?.displayName || reply.replyTo?.userName}
+              </span>
+            )}
+            {/* 回复按钮 */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-slate-500 h-6 px-2 text-xs"
+              onClick={() => onReply(reply._id, reply.author?.displayName || reply.author?.userName || '用户')}
+            >
+              回复
+            </Button>
+            {/* 删除按钮 */}
+            {canManage(reply.author?._id) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-red-500 h-6 px-2 text-xs hover:text-red-600"
+                onClick={() => onDelete(reply._id)}
+              >
+                删除
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* 回复内容 */}
+        <div
+          className="text-slate-700 text-sm [&_p]:mb-1"
+          dangerouslySetInnerHTML={{ __html: reply.content }}
+        />
+
+        {/* 子回复列表 */}
+        {reply.children && reply.children.length > 0 && (
+          <div className="mt-3 ml-11 space-y-3 border-l-2 border-slate-200 pl-4">
+            {reply.children.map((child) => (
+              <ReplyItem
+                key={child._id}
+                reply={child}
+                rootReplyId={rootReplyId}
+                onDelete={onDelete}
+                canManage={canManage}
+                onReply={onReply}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -33,9 +163,6 @@ export default function PostDetailPage() {
 
   // 编辑帖子抽屉状态
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false)
-  const [editTitle, setEditTitle] = useState('')
-  const [editContent, setEditContent] = useState('')
-  const [isEditing, setIsEditing] = useState(false)
 
   // 互动状态
   const [isLiked, setIsLiked] = useState(false)
@@ -46,6 +173,11 @@ export default function PostDetailPage() {
 
   // 关注状态（本地模拟）
   const [isFollowing, setIsFollowing] = useState(false)
+
+  // 删除确认弹窗状态
+  const [deletePostDialogOpen, setDeletePostDialogOpen] = useState(false)
+  const [deleteReplyDialogOpen, setDeleteReplyDialogOpen] = useState(false)
+  const [replyToDelete, setReplyToDelete] = useState<string | null>(null)
 
   // 加载帖子和评论
   useEffect(() => {
@@ -117,7 +249,7 @@ export default function PostDetailPage() {
       // 复制链接到剪贴板
       const url = window.location.href
       await navigator.clipboard.writeText(url)
-      alert('链接已复制到剪贴板')
+      toast.success('链接已复制到剪贴板')
     } catch (err) {
       console.error('分享失败:', err)
     } finally {
@@ -167,7 +299,7 @@ export default function PostDetailPage() {
 
   // 删除帖子
   const handleDeletePost = async () => {
-    if (!id || !confirm('确定要删除这个帖子吗？此操作不可恢复。')) return
+    if (!id) return
 
     try {
       await postApi.deletePost(id)
@@ -178,58 +310,38 @@ export default function PostDetailPage() {
     }
   }
 
+  // 打开删除回复确认框
+  const openDeleteReplyDialog = (replyId: string) => {
+    setReplyToDelete(replyId)
+    setDeleteReplyDialogOpen(true)
+  }
+
   // 删除回复
-  const handleDeleteReply = async (replyId: string) => {
-    if (!confirm('确定要删除这条回复吗？')) return
+  const handleDeleteReply = async () => {
+    if (!replyToDelete || !id) return
 
     try {
-      await postApi.deleteReply(replyId)
+      await postApi.deleteReply(replyToDelete)
       toast.success('删除成功')
       // 重新加载回复列表
-      if (id) {
-        const newReplies = await postApi.getReplyList(id, sortOrder)
-        setReplies(newReplies)
-      }
+      const newReplies = await postApi.getReplyList(id, sortOrder)
+      setReplies(newReplies)
       // 更新帖子评论数
       if (post) {
         setPost({ ...post, replyCount: Math.max(0, post.replyCount - 1) })
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '删除失败')
-    }
-  }
-
-  // 打开编辑抽屉
-  const handleOpenEditDrawer = () => {
-    if (!post) return
-    setEditTitle(post.title)
-    setEditContent(post.content.replace(/<[^>]*>/g, '')) // 简单去除HTML标签
-    setIsEditDrawerOpen(true)
-  }
-
-  // 提交编辑
-  const handleSubmitEdit = async () => {
-    if (!id || !editTitle.trim() || !editContent.trim()) {
-      toast.error('请填写标题和内容')
-      return
-    }
-
-    setIsEditing(true)
-    try {
-      const htmlContent = marked(editContent, { async: false }) as string
-      const updatedPost = await postApi.editPost({
-        postId: id,
-        title: editTitle,
-        content: htmlContent
-      })
-      setPost(updatedPost)
-      setIsEditDrawerOpen(false)
-      toast.success('编辑成功')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '编辑失败')
     } finally {
-      setIsEditing(false)
+      setReplyToDelete(null)
     }
+  }
+
+  // 编辑成功回调
+  const handleEditSuccess = (updatedPost: Post) => {
+    setPost(updatedPost)
+    setIsEditDrawerOpen(false)
+    toast.success('编辑成功')
   }
 
   // 回复成功回调
@@ -324,9 +436,34 @@ export default function PostDetailPage() {
             <article className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
               {/* 标题和分类 */}
               <div className="mb-4">
-                <h1 className="text-2xl font-bold text-slate-900 mb-3">
-                  {post.title}
-                </h1>
+                <div className="flex items-center justify-between">
+                  <h1 className="text-2xl font-bold text-slate-900 mb-3">
+                    {post.title}
+                  </h1>
+                  {/* 帖子操作按钮（编辑/删除） */}
+                  {canManagePost() && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-slate-600"
+                        onClick={() => setIsEditDrawerOpen(true)}
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        编辑
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-500 hover:text-red-600"
+                        onClick={() => setDeletePostDialogOpen(true)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        删除
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center gap-3 text-sm text-slate-500 flex-wrap">
                   {post.category && (
                     <span className="px-2 py-0.5 bg-indigo-50 rounded-full text-indigo-600">
@@ -409,29 +546,7 @@ export default function PostDetailPage() {
                   )}
                 </div>
 
-                {/* 帖子操作按钮（编辑/删除） */}
-                {canManagePost() && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-slate-600"
-                      onClick={handleOpenEditDrawer}
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      编辑
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-red-500 hover:text-red-600"
-                      onClick={handleDeletePost}
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      删除
-                    </Button>
-                  </div>
-                )}
+
 
                 {/* 互动按钮 */}
                 <div className="flex items-center gap-2">
@@ -473,16 +588,26 @@ export default function PostDetailPage() {
                 dangerouslySetInnerHTML={{ __html: post.content }}
               />
 
-              {/* 底部统计 */}
-              <div className="flex items-center gap-4 mt-6 pt-6 border-t border-slate-100 text-sm text-slate-500">
-                <span className="flex items-center gap-1">
-                  <Eye className="w-4 h-4" />
-                  {post.viewCount} 阅读
-                </span>
-                <span className="flex items-center gap-1">
-                  <MessageCircle className="w-4 h-4" />
-                  {post.replyCount} 评论
-                </span>
+              {/* 底部统计 + 回复按钮 */}
+              <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-100">
+                <div className="flex items-center gap-4 text-sm text-slate-500">
+                  <span className="flex items-center gap-1">
+                    <Eye className="w-4 h-4" />
+                    {post.viewCount} 阅读
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <MessageCircle className="w-4 h-4" />
+                    {post.replyCount} 评论
+                  </span>
+                </div>
+                <Button
+                  onClick={() => setIsReplyDrawerOpen(true)}
+                  size="sm"
+                  className="bg-indigo-600 hover:bg-indigo-700"
+                >
+                  <MessageCircle className="w-4 h-4 mr-1" />
+                  回复帖子
+                </Button>
               </div>
             </article>
 
@@ -504,17 +629,6 @@ export default function PostDetailPage() {
                 </Button>
               </div>
 
-              {/* 回复按钮 */}
-              <div className="mb-6">
-                <Button
-                  onClick={() => setIsReplyDrawerOpen(true)}
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  回复帖子
-                </Button>
-              </div>
-
               {/* 评论列表 */}
               <div className="space-y-4">
                 {replies.length === 0 ? (
@@ -523,152 +637,14 @@ export default function PostDetailPage() {
                   </p>
                 ) : (
                   replies.map((reply) => (
-                    <div key={reply._id} className="space-y-3">
-                      {/* 一级回复 */}
-                      <div className="flex gap-3 p-4 bg-slate-50 rounded-lg">
-                        {reply.author?._id ? (
-                          <Link to={`/user/${reply.author._id}`} className="shrink-0">
-                            <Avatar className="w-8 h-8 hover:opacity-80">
-                              {reply.author?.avatar ? (
-                                <AvatarImage src={reply.author.avatar} alt="" />
-                              ) : null}
-                              <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm">
-                                {getInitials(reply.author?.displayName || reply.author?.userName)}
-                              </AvatarFallback>
-                            </Avatar>
-                          </Link>
-                        ) : (
-                          <Avatar className="w-8 h-8 shrink-0">
-                            {reply.author?.avatar ? (
-                              <AvatarImage src={reply.author.avatar} alt="" />
-                            ) : null}
-                            <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm">
-                              {getInitials(reply.author?.displayName || reply.author?.userName)}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            {reply.author?._id ? (
-                              <Link
-                                to={`/user/${reply.author._id}`}
-                                className="font-medium text-slate-900 text-sm hover:underline flex items-center gap-1"
-                              >
-                                {reply.author?.displayName || reply.author?.userName || '未知用户'}
-                                {reply.author?.role === 'admin' && (
-                                  <span className="px-1 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">管理员</span>
-                                )}
-                              </Link>
-                            ) : (
-                              <span className="font-medium text-slate-900 text-sm">
-                                {reply.author?.displayName || reply.author?.userName || '未知用户'}
-                              </span>
-                            )}
-                            <span className="text-xs text-slate-400">
-                              {formatTime(reply.createdAt)}
-                            </span>
-                          </div>
-                          <p className="text-slate-700 text-sm whitespace-pre-wrap">
-                            {reply.content}
-                          </p>
-                          {/* 操作按钮 */}
-                          <div className="flex items-center gap-3 mt-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-slate-500 h-6 px-2 text-xs"
-                              onClick={() => handleReplyToReply(reply._id, reply.author?.displayName || reply.author?.userName || '用户')}
-                            >
-                              回复
-                            </Button>
-                            {canManageReply(reply.author?._id) && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-500 h-6 px-2 text-xs hover:text-red-600"
-                                onClick={() => handleDeleteReply(reply._id)}
-                              >
-                                删除
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 二级回复 */}
-                      {reply.children && reply.children.length > 0 && (
-                        <div className="ml-11 space-y-3 border-l-2 border-slate-200 pl-4">
-                          {reply.children.map((child) => (
-                            <div key={child._id} className="flex gap-3 p-3 bg-white rounded-lg border border-slate-100">
-                              {child.author?._id ? (
-                                <Link to={`/user/${child.author._id}`} className="shrink-0">
-                                  <Avatar className="w-6 h-6 hover:opacity-80">
-                                    {child.author?.avatar ? (
-                                      <AvatarImage src={child.author.avatar} alt="" />
-                                    ) : null}
-                                    <AvatarFallback className="bg-indigo-100 text-indigo-600 text-xs">
-                                      {getInitials(child.author?.displayName || child.author?.userName)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                </Link>
-                              ) : (
-                                <Avatar className="w-6 h-6 shrink-0">
-                                  {child.author?.avatar ? (
-                                    <AvatarImage src={child.author.avatar} alt="" />
-                                  ) : null}
-                                  <AvatarFallback className="bg-indigo-100 text-indigo-600 text-xs">
-                                    {getInitials(child.author?.displayName || child.author?.userName)}
-                                  </AvatarFallback>
-                                </Avatar>
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                  {child.author?._id ? (
-                                    <Link
-                                      to={`/user/${child.author._id}`}
-                                      className="font-medium text-slate-900 text-xs hover:underline flex items-center gap-1"
-                                    >
-                                      {child.author?.displayName || child.author?.userName || '未知用户'}
-                                      {child.author?.role === 'admin' && (
-                                        <span className="px-1 py-0.5 bg-amber-100 text-amber-700 text-[10px] rounded">管理员</span>
-                                      )}
-                                    </Link>
-                                  ) : (
-                                    <span className="font-medium text-slate-900 text-xs">
-                                      {child.author?.displayName || child.author?.userName || '未知用户'}
-                                    </span>
-                                  )}
-                                  {child.replyTo && (
-                                    <span className="text-xs text-slate-400">
-                                      回复 {child.replyTo.displayName || child.replyTo.userName}
-                                    </span>
-                                  )}
-                                  <span className="text-xs text-slate-400">
-                                    {formatTime(child.createdAt)}
-                                  </span>
-                                </div>
-                                <p className="text-slate-700 text-sm whitespace-pre-wrap">
-                                  {child.content}
-                                </p>
-                                {/* 操作按钮 - 二级回复不能再次回复（限制2层） */}
-                                <div className="flex items-center gap-3 mt-2">
-                                  {canManageReply(child.author?._id) && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-red-500 h-6 px-2 text-xs hover:text-red-600"
-                                      onClick={() => handleDeleteReply(child._id)}
-                                    >
-                                      删除
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <ReplyItem
+                      key={reply._id}
+                      reply={reply}
+                      rootReplyId={reply._id}
+                      onDelete={(id) => openDeleteReplyDialog(id)}
+                      canManage={canManageReply}
+                      onReply={handleReplyToReply}
+                    />
                   ))
                 )}
               </div>
@@ -792,47 +768,35 @@ export default function PostDetailPage() {
       />
 
       {/* 编辑帖子抽屉 */}
-      <Drawer open={isEditDrawerOpen} onOpenChange={setIsEditDrawerOpen}>
-        <DrawerContent title="编辑帖子">
-          <div className="flex flex-col h-[calc(70vh-92px)] overflow-hidden px-4">
-            {/* 标题输入 */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-1">标题</label>
-              <input
-                type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="请输入帖子标题"
-              />
-            </div>
+      <PostFormDrawer
+        open={isEditDrawerOpen}
+        onOpenChange={setIsEditDrawerOpen}
+        mode="edit"
+        initialData={post || undefined}
+        onSuccess={handleEditSuccess}
+      />
 
-            {/* 内容编辑器 */}
-            <div className="flex-1 overflow-hidden">
-              <label className="block text-sm font-medium text-slate-700 mb-1">内容</label>
-              <SplitEditor value={editContent} onChange={setEditContent} />
-            </div>
+      {/* 删除帖子确认框 */}
+      <ConfirmDialog
+        open={deletePostDialogOpen}
+        onOpenChange={setDeletePostDialogOpen}
+        title="删除帖子"
+        description="确定要删除这个帖子吗？此操作不可恢复。"
+        confirmText="删除"
+        variant="destructive"
+        onConfirm={handleDeletePost}
+      />
 
-            {/* 底部按钮 */}
-            <div className="flex items-center justify-between pt-4 shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEditDrawerOpen(false)}
-              >
-                取消
-              </Button>
-              <Button
-                onClick={handleSubmitEdit}
-                disabled={isEditing}
-                className="bg-indigo-600 hover:bg-indigo-700"
-              >
-                {isEditing ? '保存中...' : '保存'}
-              </Button>
-            </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
+      {/* 删除回复确认框 */}
+      <ConfirmDialog
+        open={deleteReplyDialogOpen}
+        onOpenChange={setDeleteReplyDialogOpen}
+        title="删除回复"
+        description="确定要删除这条回复吗？此操作不可恢复。"
+        confirmText="删除"
+        variant="destructive"
+        onConfirm={handleDeleteReply}
+      />
     </div>
   )
 }

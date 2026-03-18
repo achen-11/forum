@@ -14,6 +14,11 @@ const Forum_Reply = ksql.define(
             default: '',
             comment: '父回复 ID，空字符串表示顶级回复'
         },
+        rootReplyId: {
+            type: DataTypes.String,
+            default: '',
+            comment: '顶级回复 ID，顶级回复此字段等于自己的 _id'
+        },
         authorId: {
             type: DataTypes.String,
             required: true,

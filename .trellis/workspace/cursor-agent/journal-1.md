@@ -299,3 +299,73 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 7: 前端适配多级回复 & UI 规范完善
+
+**Date**: 2026-03-18
+**Task**: 前端适配多级回复 & UI 规范完善
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## 完成内容
+
+### 后端验证 (curl 测试)
+- 验证 `rootReplyId` 字段正确设置
+- 验证 `replyTo` 被回复者信息返回
+- 验证 `role` 字段返回
+- 验证删除权限校验正常
+
+### 前端改动
+
+| 文件 | 改动 |
+|------|------|
+| `authStore.ts` | 登录后调用 `getCurrentUser()` 获取真实 role |
+| `types/post.ts` | Reply 类型添加 `rootReplyId` 字段 |
+| `PostDetailPage.tsx` | 重构评论列表渲染逻辑，使用递归 `ReplyItem` 组件 |
+
+### 评论列表渲染规则
+- `parentId === rootReplyId` (二级回复) → 不显示"回复 XXX"
+- `parentId !== rootReplyId` (3+级回复) → 显示"回复 XXX"
+
+### UI 规范完善
+- 添加 `ConfirmDialog` 组件 (`components/ui/confirm-dialog.tsx`)
+- 规范文档 (`component-guidelines.md`)：禁止使用 `alert`/`confirm`，必须使用 shadcn/ui 组件
+- 修复 `PostDetailPage.tsx` 中的 `alert` 调用
+
+### 编辑/创建帖子复用
+- `CreatePostDrawer` 重构为 `PostFormDrawer`
+- 支持 `mode: 'create' | 'edit'`
+- 编辑模式下自动回填标题和内容（去除 HTML 标签）
+
+**Updated Files**:
+- `Frontend/src/components/CreatePostDrawer.tsx`
+- `Frontend/src/components/ui/confirm-dialog.tsx` (新增)
+- `Frontend/src/pages/HomePage.tsx`
+- `Frontend/src/pages/PostDetailPage.tsx`
+- `Frontend/src/stores/authStore.ts`
+- `Frontend/src/types/post.ts`
+- `.trellis/spec/frontend/component-guidelines.md`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1e83bb1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
