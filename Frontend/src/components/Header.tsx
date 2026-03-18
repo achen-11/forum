@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useAuthStore } from '@/stores/authStore'
-import { Bell, ChevronDown, Search, Settings } from 'lucide-react'
+import { Bell, ChevronDown, Search } from 'lucide-react'
 
 export function Header() {
   const navigate = useNavigate()
@@ -97,8 +97,14 @@ export function Header() {
                       className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      <Settings className="w-4 h-4" />
-                      管理后台
+                      内容管理
+                    </Link>
+                    <Link
+                      to="/admin/category"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      分类管理
                     </Link>
                   </>
                 )}

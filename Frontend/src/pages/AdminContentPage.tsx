@@ -53,10 +53,8 @@ export default function AdminContentPage() {
   const [total, setTotal] = useState(0)
 
   const [deletePostId, setDeletePostId] = useState<string | null>(null)
-  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const [pinPostId, setPinPostId] = useState<string | null>(null)
-  const [pinLoading, setPinLoading] = useState(false)
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
 
@@ -82,7 +80,6 @@ export default function AdminContentPage() {
 
   const handleDeletePost = async () => {
     if (!deletePostId) return
-    setDeleteLoading(true)
     try {
       await adminContentApi.deletePost(deletePostId)
       toast.success('删除成功')
@@ -90,13 +87,10 @@ export default function AdminContentPage() {
       fetchPosts(page)
     } catch (err: any) {
       toast.error(err.message || '删除失败')
-    } finally {
-      setDeleteLoading(false)
     }
   }
 
   const handlePinPost = async (post: Post) => {
-    setPinLoading(true)
     try {
       await adminContentApi.pinPost(post._id, !post.isPinned)
       toast.success(post.isPinned ? '取消置顶成功' : '置顶成功')
@@ -104,8 +98,6 @@ export default function AdminContentPage() {
       fetchPosts(page)
     } catch (err: any) {
       toast.error(err.message || '操作失败')
-    } finally {
-      setPinLoading(false)
     }
   }
 
@@ -229,9 +221,7 @@ export default function AdminContentPage() {
                             className="gap-1"
                             onClick={() => setPinPostId(post._id)}
                           >
-                            {pinLoading && pinPostId === post._id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : post.isPinned ? (
+                            {post.isPinned ? (
                               <><PinOff className="w-4 h-4" /> 取消置顶</>
                             ) : (
                               <><Pin className="w-4 h-4" /> 置顶</>
@@ -288,9 +278,8 @@ export default function AdminContentPage() {
         title="删除帖子"
         description="确定要删除这篇帖子吗？此操作不可恢复，关联的回复也会被删除。"
         confirmText="删除"
-        confirmVariant="destructive"
+        variant="destructive"
         onConfirm={handleDeletePost}
-        loading={deleteLoading}
       />
 
       {/* Pin Confirmation Dialog */}
@@ -304,7 +293,6 @@ export default function AdminContentPage() {
           const post = posts.find(p => p._id === pinPostId)
           if (post) handlePinPost(post)
         }}
-        loading={pinLoading}
       />
     </div>
   )
