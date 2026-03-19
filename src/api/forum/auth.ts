@@ -135,6 +135,9 @@ k.api.post('logout', () => {
 k.api.get('me', () => {
   try {
     const user = getCurrentUser();
+    if (!user) {
+      return failResponse('登录已过期');
+    }
     return successResponse(user);
   } catch (e: any) {
     return failResponse(e?.message || '服务器错误');

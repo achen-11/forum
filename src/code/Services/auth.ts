@@ -31,10 +31,12 @@ function isUserName(account: string): boolean {
     return /^[a-zA-Z0-9_]{2,20}$/.test(account)
 }
 
-function cacheKey(type: 'phone' | 'email', account: string): string {
+function cacheKey(type: 'phone' | 'email' | 'username', account: string): string {
     return type === 'email'
         ? `forum_verify_code_email_${account}`
-        : `forum_verify_code_phone_${account}`
+        : type === 'phone'
+        ? `forum_verify_code_phone_${account}`
+        : `forum_verify_code_username_${account}`
 }
 
 function setTokenCookie(token: string, isRemember: boolean): void {
@@ -202,6 +204,7 @@ export function sendVerificationCode(body: {
     } else {
         // 真实发送
         if (accountType === 'phone') {
+            // @ts-ignore
             k.sms.aliSMS.send(ENV.SMS_TEMPLATE_ID, '+86' + acc, {
                 code: verificationCode
             })
