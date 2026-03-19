@@ -660,17 +660,35 @@ export default function PostDetailPage() {
                 作者信息
               </h3>
               <div className="flex flex-col items-center text-center">
-                <Avatar className="w-16 h-16 mb-3">
-                  {post.author?.avatar ? (
-                    <AvatarImage src={post.author.avatar} alt="" />
-                  ) : null}
-                  <AvatarFallback className="bg-indigo-100 text-indigo-600 text-xl">
-                    {getInitials(post.author?.displayName || post.author?.userName)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="font-medium text-slate-900 mb-1">
-                  {post.author?.displayName || post.author?.userName || '未知用户'}
-                </div>
+                {post.author?._id ? (
+                  <Link to={`/user/${post.author._id}`} className="hover:opacity-80">
+                    <Avatar className="w-16 h-16 mb-3">
+                      {post.author?.avatar ? (
+                        <AvatarImage src={post.author.avatar} alt="" />
+                      ) : null}
+                      <AvatarFallback className="bg-indigo-100 text-indigo-600 text-xl">
+                        {getInitials(post.author?.displayName || post.author?.userName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="font-medium text-slate-900 mb-1 hover:text-primary">
+                      {post.author?.displayName || post.author?.userName || '未知用户'}
+                    </div>
+                  </Link>
+                ) : (
+                  <>
+                    <Avatar className="w-16 h-16 mb-3">
+                      {post.author?.avatar ? (
+                        <AvatarImage src={post.author.avatar} alt="" />
+                      ) : null}
+                      <AvatarFallback className="bg-indigo-100 text-indigo-600 text-xl">
+                        {getInitials(post.author?.displayName || post.author?.userName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="font-medium text-slate-900 mb-1">
+                      {post.author?.displayName || post.author?.userName || '未知用户'}
+                    </div>
+                  </>
+                )}
                 <div className="text-sm text-slate-500 mb-3">
                   社区成员
                 </div>
