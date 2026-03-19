@@ -89,13 +89,46 @@ export function Header() {
                 >
                   个人主页
                 </Link>
-                <Link
-                  to="/profile"
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  设置
-                </Link>
+                {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                  <>
+                    <hr className="my-2 border-slate-100" />
+                    <Link
+                      to="/admin/content"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      内容管理
+                    </Link>
+                    <Link
+                      to="/admin/category"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      分类管理
+                    </Link>
+                    <Link
+                      to="/admin/tag"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      标签管理
+                    </Link>
+                    <Link
+                      to="/admin/user"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      用户管理
+                    </Link>
+                    <Link
+                      to="/admin/log"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      操作日志
+                    </Link>
+                  </>
+                )}
                 <hr className="my-2 border-slate-100" />
                 <button
                   onClick={handleLogout}

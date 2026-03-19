@@ -8,6 +8,12 @@ import SearchPage from './pages/SearchPage'
 import PostDetailPage from './pages/PostDetailPage'
 import ProfilePage from './pages/ProfilePage'
 import UserProfilePage from './pages/UserProfilePage'
+import AdminLayout from './components/AdminLayout'
+import AdminContentPage from './pages/AdminContentPage'
+import AdminCategoryPage from './pages/AdminCategoryPage'
+import AdminTagPage from './pages/AdminTagPage'
+import AdminUserPage from './pages/AdminUserPage'
+import AdminLogPage from './pages/AdminLogPage'
 import { Loader2 } from 'lucide-react'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -83,6 +89,23 @@ export default function App() {
           }
         />
         <Route path="/user/:id" element={<UserProfilePage />} />
+
+        {/* Admin Routes - Shared Layout */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/admin/content" replace />} />
+          <Route path="content" element={<AdminContentPage />} />
+          <Route path="category" element={<AdminCategoryPage />} />
+          <Route path="tag" element={<AdminTagPage />} />
+          <Route path="user" element={<AdminUserPage />} />
+          <Route path="log" element={<AdminLogPage />} />
+        </Route>
       </Routes>
     </HashRouter>
   )
