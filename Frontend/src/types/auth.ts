@@ -53,3 +53,27 @@ export interface ApiResponse<T = any> {
   data: T
   message: string
 }
+
+// 用户评论
+export interface UserComment {
+  _id: string
+  content: string
+  createdAt: number
+  post: {
+    _id: string
+    title: string
+  } | null
+}
+
+// 用户活动 (帖子 + 评论的联合类型)
+export interface UserActivity {
+  type: 'post' | 'comment'
+  _id: string
+  title?: string
+  content?: string
+  createdAt: number
+  post?: {
+    _id: string
+    title: string
+  } | null
+}
