@@ -5,6 +5,7 @@ import { Forum_Post_Tag } from 'code/Models/Forum_Post_Tag'
 import { Forum_Post } from 'code/Models/Forum_Post'
 import { getCurrentUser } from 'code/Services/auth'
 import { successResponse, failResponse } from 'code/Utils/ResponseUtils'
+import { logAdminAction, AdminAction, TargetType } from 'code/Services/AdminLogService'
 
 /**
  * 检查是否为管理员（admin 或 superadmin）
@@ -94,6 +95,15 @@ k.api.post('create', () => {
         }
 
         const tag = Forum_Tag.findById(tagId)
+
+        // 记录日志
+        logAdminAction({
+            action: AdminAction.TAG_CREATE,
+            targetType: TargetType.TAG,
+            targetId: tagId,
+            detail: { name: tag?.name, color: tag?.color }
+        })
+
         return successResponse({ tag })
     } catch (e: any) {
         return failResponse(e?.message || '创建标签失败')
@@ -148,6 +158,15 @@ k.api.post('update', () => {
         Forum_Tag.updateById(tagId, updateData)
 
         const updated = Forum_Tag.findById(tagId)
+
+        // 记录日志
+        logAdminAction({
+            action: AdminAction.TAG_UPDATE,
+            targetType: TargetType.TAG,
+            targetId: tagId,
+            detail: updateData
+        })
+
         return successResponse({ tag: updated })
     } catch (e: any) {
         return failResponse(e?.message || '更新标签失败')
@@ -195,6 +214,14 @@ k.api.post('delete', () => {
 
         // 软删除
         Forum_Tag.deleteById(tagId)
+
+        // 记录日志
+        logAdminAction({
+            action: AdminAction.TAG_DELETE,
+            targetType: TargetType.TAG,
+            targetId: tagId,
+            detail: { name: tag.name }
+        })
 
         return successResponse({ success: true, message: '删除成功' })
     } catch (e: any) {

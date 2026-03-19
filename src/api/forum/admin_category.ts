@@ -4,6 +4,7 @@ import { Forum_Category } from 'code/Models/Forum_Category'
 import { Forum_Post } from 'code/Models/Forum_Post'
 import { getCurrentUser } from 'code/Services/auth'
 import { successResponse, failResponse } from 'code/Utils/ResponseUtils'
+import { logAdminAction, AdminAction, TargetType } from 'code/Services/AdminLogService'
 
 /**
  * 检查是否为管理员（admin 或 superadmin）
@@ -103,6 +104,15 @@ k.api.post('create', () => {
         }
 
         const category = Forum_Category.findById(categoryId)
+
+        // 记录日志
+        logAdminAction({
+            action: AdminAction.CATEGORY_CREATE,
+            targetType: TargetType.CATEGORY,
+            targetId: categoryId,
+            detail: { name: category?.name }
+        })
+
         return successResponse({ category })
     } catch (e: any) {
         return failResponse(e?.message || '创建分类失败')
@@ -167,6 +177,15 @@ k.api.post('update', () => {
         Forum_Category.updateById(categoryId, updateData)
 
         const updated = Forum_Category.findById(categoryId)
+
+        // 记录日志
+        logAdminAction({
+            action: AdminAction.CATEGORY_UPDATE,
+            targetType: TargetType.CATEGORY,
+            targetId: categoryId,
+            detail: updateData
+        })
+
         return successResponse({ category: updated })
     } catch (e: any) {
         return failResponse(e?.message || '更新分类失败')
@@ -215,6 +234,14 @@ k.api.post('delete', () => {
 
         // 软删除
         Forum_Category.deleteById(categoryId)
+
+        // 记录日志
+        logAdminAction({
+            action: AdminAction.CATEGORY_DELETE,
+            targetType: TargetType.CATEGORY,
+            targetId: categoryId,
+            detail: { name: category.name }
+        })
 
         return successResponse({ success: true, message: '删除成功' })
     } catch (e: any) {

@@ -12,6 +12,7 @@ import AdminContentPage from './pages/AdminContentPage'
 import AdminCategoryPage from './pages/AdminCategoryPage'
 import AdminTagPage from './pages/AdminTagPage'
 import AdminUserPage from './pages/AdminUserPage'
+import AdminLogPage from './pages/AdminLogPage'
 import { Loader2 } from 'lucide-react'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -116,6 +117,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AdminUserPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/log"
+          element={
+            <ProtectedRoute>
+              <AdminLogPage />
             </ProtectedRoute>
           }
         />

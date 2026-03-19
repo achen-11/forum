@@ -3,6 +3,7 @@
 import { Forum_User } from 'code/Models/Forum_User'
 import { getCurrentUser } from 'code/Services/auth'
 import { successResponse, failResponse } from 'code/Utils/ResponseUtils'
+import { logAdminAction, AdminAction, TargetType } from 'code/Services/AdminLogService'
 
 /**
  * 检查是否为超级管理员
@@ -165,6 +166,14 @@ k.api.post('role', () => {
 
         Forum_User.updateById(userId, { role } as any)
 
+        // 记录日志
+        logAdminAction({
+            action: AdminAction.USER_ROLE_CHANGE,
+            targetType: TargetType.USER,
+            targetId: userId,
+            detail: { targetRole: role, targetDisplayName: (targetUser as any)?.displayName }
+        })
+
         return successResponse({ success: true, message: '角色变更成功' })
     } catch (e: any) {
         return failResponse(e?.message || '变更角色失败')
@@ -222,6 +231,14 @@ k.api.post('ban', () => {
 
         Forum_User.updateById(userId, { isBanned: true } as any)
 
+        // 记录日志
+        logAdminAction({
+            action: AdminAction.USER_BAN,
+            targetType: TargetType.USER,
+            targetId: userId,
+            detail: { targetDisplayName: (targetUser as any)?.displayName }
+        })
+
         return successResponse({ success: true, message: '封禁成功' })
     } catch (e: any) {
         return failResponse(e?.message || '封禁失败')
@@ -263,6 +280,14 @@ k.api.post('unban', () => {
         }
 
         Forum_User.updateById(userId, { isBanned: false } as any)
+
+        // 记录日志
+        logAdminAction({
+            action: AdminAction.USER_UNBAN,
+            targetType: TargetType.USER,
+            targetId: userId,
+            detail: { targetDisplayName: (targetUser as any)?.displayName }
+        })
 
         return successResponse({ success: true, message: '解封成功' })
     } catch (e: any) {

@@ -5,6 +5,7 @@ import { Forum_Reply } from 'code/Models/Forum_Reply'
 import { Forum_User } from 'code/Models/Forum_User'
 import { getCurrentUser } from 'code/Services/auth'
 import { successResponse, failResponse } from 'code/Utils/ResponseUtils'
+import { logAdminAction, AdminAction, TargetType } from 'code/Services/AdminLogService'
 
 /**
  * 检查是否为管理员（admin 或 superadmin）
@@ -74,6 +75,14 @@ k.api.post('post/delete', () => {
             Forum_Reply.deleteById(reply._id)
         }
 
+        // 记录日志
+        logAdminAction({
+            action: AdminAction.POST_DELETE,
+            targetType: TargetType.POST,
+            targetId: postId,
+            detail: { title: post.title }
+        })
+
         return successResponse({ success: true, message: '删除成功' })
     } catch (e: any) {
         return failResponse(e?.message || '删除帖子失败')
@@ -113,6 +122,14 @@ k.api.post('post/pin', () => {
         }
 
         Forum_Post.updateById(postId, { isPinned: !!isPinned } as any)
+
+        // 记录日志
+        logAdminAction({
+            action: isPinned ? AdminAction.POST_PIN : AdminAction.POST_UNPIN,
+            targetType: TargetType.POST,
+            targetId: postId,
+            detail: { title: post.title, isPinned: !!isPinned }
+        })
 
         return successResponse({
             success: true,
@@ -168,6 +185,14 @@ k.api.post('reply/delete', () => {
                 replyCount: post.replyCount - 1
             } as any)
         }
+
+        // 记录日志
+        logAdminAction({
+            action: AdminAction.REPLY_DELETE,
+            targetType: TargetType.REPLY,
+            targetId: replyId,
+            detail: { postId: reply.postId, content: reply.content?.slice(0, 100) }
+        })
 
         return successResponse({ success: true, message: '删除成功' })
     } catch (e: any) {
