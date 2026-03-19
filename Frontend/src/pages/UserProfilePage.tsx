@@ -215,7 +215,7 @@ export default function UserProfilePage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{postsCount}</p>
-                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Posts</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">帖子</p>
               </div>
             </CardContent>
           </Card>
@@ -228,7 +228,7 @@ export default function UserProfilePage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{followersCount}</p>
-                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Followers</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">粉丝</p>
               </div>
             </CardContent>
           </Card>
@@ -241,7 +241,7 @@ export default function UserProfilePage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">--</p>
-                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Awards</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">成就</p>
               </div>
             </CardContent>
           </Card>
@@ -255,21 +255,21 @@ export default function UserProfilePage() {
               className="pb-4 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent rounded-none gap-1.5"
             >
               <FileText className="w-4 h-4" />
-              Posts
+              帖子
             </TabsTrigger>
             <TabsTrigger
               value="comments"
               className="pb-4 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent rounded-none gap-1.5"
             >
               <MessageSquare className="w-4 h-4" />
-              Comments
+              评论
             </TabsTrigger>
             <TabsTrigger
               value="activity"
               className="pb-4 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent rounded-none gap-1.5"
             >
               <Zap className="w-4 h-4" />
-              Activity
+              动态
             </TabsTrigger>
           </TabsList>
 
