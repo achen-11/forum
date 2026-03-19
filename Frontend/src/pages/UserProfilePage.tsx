@@ -249,24 +249,24 @@ export default function UserProfilePage() {
 
         {/* Content Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
-          <TabsList className="border-b border-slate-200 dark:border-slate-800 bg-transparent h-auto p-0 gap-8">
+          <TabsList className="w-full border-b border-slate-200 dark:border-slate-800 bg-transparent h-auto p-0 gap-8 justify-start">
             <TabsTrigger
               value="posts"
-              className="pb-4 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent rounded-none gap-1.5"
+              className="border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent rounded-none gap-1.5"
             >
               <FileText className="w-4 h-4" />
               帖子
             </TabsTrigger>
             <TabsTrigger
               value="comments"
-              className="pb-4 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent rounded-none gap-1.5"
+              className="border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent rounded-none gap-1.5"
             >
               <MessageSquare className="w-4 h-4" />
               评论
             </TabsTrigger>
             <TabsTrigger
               value="activity"
-              className="pb-4 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent rounded-none gap-1.5"
+              className="border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent rounded-none gap-1.5"
             >
               <Zap className="w-4 h-4" />
               动态
@@ -348,9 +348,10 @@ export default function UserProfilePage() {
                           评论了帖子: <span className="text-primary group-hover:underline">{comment.post.title}</span>
                         </p>
                       )}
-                      <p className="text-slate-700 dark:text-slate-300 mb-2 line-clamp-2">
-                        {comment.content}
-                      </p>
+                      <div
+                        className="text-slate-700 dark:text-slate-300 mb-2 line-clamp-2 prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: comment.content }}
+                      />
                       <span className="text-slate-400 text-xs">
                         {formatTime(comment.createdAt)}
                       </span>
@@ -407,9 +408,10 @@ export default function UserProfilePage() {
                                 评论了: <span className="text-primary">{item.post.title}</span>
                               </p>
                             )}
-                            <p className="text-slate-700 dark:text-slate-300 line-clamp-2">
-                              {item.content}
-                            </p>
+                            <div
+                              className="text-slate-700 dark:text-slate-300 line-clamp-2 prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ __html: item.content }}
+                            />
                           </>
                         )}
                       </CardContent>
