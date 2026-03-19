@@ -6,6 +6,7 @@ import type {
   SendCodeResponse,
   RegisterRequest,
   UserInfo,
+  UserComment,
 } from '@/types/auth'
 
 const API_BASE = '/api/forum/auth'
@@ -63,4 +64,40 @@ export const authApi = {
    */
   updateProfile: (data: { displayName?: string; avatar?: string }) =>
     http.post<UserInfo>(`${API_BASE}/update-profile`, data),
+
+  /**
+   * 关注用户
+   */
+  follow: (followingId: string) =>
+    http.post<{ success: boolean; message: string }>(`${API_BASE}/follow`, { followingId }),
+
+  /**
+   * 取消关注
+   */
+  unfollow: (followingId: string) =>
+    http.post<{ success: boolean; message: string }>(`${API_BASE}/unfollow`, { followingId }),
+
+  /**
+   * 获取用户粉丝数量
+   */
+  getUserFollowers: (userId: string) =>
+    http.get<{ count: number }>(`${API_BASE}/user-followers?userId=${userId}`),
+
+  /**
+   * 获取用户关注数量
+   */
+  getUserFollowing: (userId: string) =>
+    http.get<{ count: number }>(`${API_BASE}/user-following?userId=${userId}`),
+
+  /**
+   * 检查是否已关注
+   */
+  isFollowing: (followingId: string) =>
+    http.get<{ isFollowing: boolean }>(`${API_BASE}/is-following?followingId=${followingId}`),
+
+  /**
+   * 获取用户评论列表
+   */
+  getUserComments: (userId: string, limit: number = 20) =>
+    http.get<UserComment[]>(`${API_BASE}/user-comments?userId=${userId}&limit=${limit}`),
 }
