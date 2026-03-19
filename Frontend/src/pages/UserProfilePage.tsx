@@ -182,10 +182,10 @@ export default function UserProfilePage() {
                       <Users className="w-4 h-4" />
                       {isFollowing ? '已关注' : '关注'}
                     </Button>
-                    <Button variant="outline" className="gap-1.5">
+                    {/* <Button variant="outline" className="gap-1.5">
                       <MessageSquare className="w-4 h-4" />
                       发消息
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
 
@@ -345,7 +345,16 @@ export default function UserProfilePage() {
                     <CardContent className="p-5">
                       {comment.post && (
                         <p className="text-xs text-slate-500 mb-2">
-                          评论了帖子: <span className="text-primary group-hover:underline">{comment.post.title}</span>
+                          评论了帖子:{' '}
+                          <span
+                            className="text-primary group-hover:underline cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigate(`/post/${comment.post!._id}`)
+                            }}
+                          >
+                            {comment.post.title}
+                          </span>
                         </p>
                       )}
                       <div
@@ -380,7 +389,17 @@ export default function UserProfilePage() {
                   })
                   .slice(0, 20)
                   .map((item) => (
-                    <Card key={`${item.type}-${item.id}`} className="hover:border-primary/50 transition-colors cursor-pointer">
+                    <Card
+                      key={`${item.type}-${item.id}`}
+                      className="hover:border-primary/50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        if (item.type === 'post') {
+                          navigate(`/post/${item.id}`)
+                        } else if (item.post) {
+                          navigate(`/post/${item.post._id}`)
+                        }
+                      }}
+                    >
                       <CardContent className="p-5">
                         <div className="flex justify-between items-start mb-2">
                           <Badge variant="outline" className="text-xs">
@@ -405,7 +424,10 @@ export default function UserProfilePage() {
                           <>
                             {item.post && (
                               <p className="text-xs text-slate-500 mb-1">
-                                评论了: <span className="text-primary">{item.post.title}</span>
+                                评论了:{' '}
+                                <span className="text-primary hover:underline">
+                                  {item.post.title}
+                                </span>
                               </p>
                             )}
                             <div
