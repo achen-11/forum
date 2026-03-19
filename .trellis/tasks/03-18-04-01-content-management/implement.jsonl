@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": "src/code/Models/Forum_Post.ts", "reason": "Post model with isPinned field"}
+{"file": "src/code/Models/Forum_Reply.ts", "reason": "Reply model for delete operations"}
+{"file": "src/code/Models/Forum_User.ts", "reason": "User model with role field"}

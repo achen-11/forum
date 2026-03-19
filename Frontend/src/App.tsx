@@ -8,6 +8,7 @@ import SearchPage from './pages/SearchPage'
 import PostDetailPage from './pages/PostDetailPage'
 import ProfilePage from './pages/ProfilePage'
 import UserProfilePage from './pages/UserProfilePage'
+import AdminLayout from './components/AdminLayout'
 import AdminContentPage from './pages/AdminContentPage'
 import AdminCategoryPage from './pages/AdminCategoryPage'
 import AdminTagPage from './pages/AdminTagPage'
@@ -88,46 +89,23 @@ export default function App() {
           }
         />
         <Route path="/user/:id" element={<UserProfilePage />} />
+
+        {/* Admin Routes - Shared Layout */}
         <Route
-          path="/admin/content"
+          path="/admin"
           element={
             <ProtectedRoute>
-              <AdminContentPage />
+              <AdminLayout />
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/admin/category"
-          element={
-            <ProtectedRoute>
-              <AdminCategoryPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/tag"
-          element={
-            <ProtectedRoute>
-              <AdminTagPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/user"
-          element={
-            <ProtectedRoute>
-              <AdminUserPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/log"
-          element={
-            <ProtectedRoute>
-              <AdminLogPage />
-            </ProtectedRoute>
-          }
-        />
+        >
+          <Route index element={<Navigate to="/admin/content" replace />} />
+          <Route path="content" element={<AdminContentPage />} />
+          <Route path="category" element={<AdminCategoryPage />} />
+          <Route path="tag" element={<AdminTagPage />} />
+          <Route path="user" element={<AdminUserPage />} />
+          <Route path="log" element={<AdminLogPage />} />
+        </Route>
       </Routes>
     </HashRouter>
   )

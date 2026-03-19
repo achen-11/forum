@@ -53,7 +53,6 @@ export default function AdminContentPage() {
   const [total, setTotal] = useState(0)
 
   const [deletePostId, setDeletePostId] = useState<string | null>(null)
-
   const [pinPostId, setPinPostId] = useState<string | null>(null)
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
@@ -113,7 +112,7 @@ export default function AdminContentPage() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-[#f6f6f8] flex items-center justify-center">
+      <div className="flex items-center justify-center h-full">
         <Card className="w-96">
           <CardContent className="pt-6 text-center">
             <Shield className="w-12 h-12 mx-auto text-slate-400 mb-4" />
@@ -126,20 +125,7 @@ export default function AdminContentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f6f8]">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-slate-800">内容管理</h1>
-          <div className="flex items-center gap-2">
-            {getRoleBadge(user?.role || 'user')}
-            <span className="text-sm text-slate-600">{user?.displayName}</span>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
+    <div className="h-full">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -269,7 +255,6 @@ export default function AdminContentPage() {
             )}
           </CardContent>
         </Card>
-      </main>
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

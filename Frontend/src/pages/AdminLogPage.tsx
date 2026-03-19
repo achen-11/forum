@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { adminLogApi } from '@/api/admin_log'
 import { useAuthStore } from '@/stores/authStore'
 import {
-  Crown,
   Shield,
   Loader2,
   FileText,
@@ -120,16 +119,6 @@ export default function AdminLogPage() {
     setTargetTypeFilter('')
   }
 
-  const getRoleBadge = (role: string) => {
-    if (role === 'superadmin') {
-      return <Badge className="bg-amber-500 hover:bg-amber-600 gap-1"><Crown className="w-3 h-3" /> 超级管理员</Badge>
-    }
-    if (role === 'admin') {
-      return <Badge className="bg-indigo-500 hover:bg-indigo-600 gap-1"><Shield className="w-3 h-3" /> 管理员</Badge>
-    }
-    return null
-  }
-
   const formatDetail = (action: string, detail: Record<string, any> | null): string => {
     if (!detail) return ''
     switch (action) {
@@ -158,7 +147,7 @@ export default function AdminLogPage() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-[#f6f6f8] flex items-center justify-center">
+      <div className="flex items-center justify-center h-full">
         <Card className="w-96">
           <CardContent className="pt-6 text-center">
             <Shield className="w-12 h-12 mx-auto text-slate-400 mb-4" />
@@ -171,21 +160,8 @@ export default function AdminLogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f6f8]">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-slate-800">操作日志</h1>
-          <div className="flex items-center gap-2">
-            {getRoleBadge(currentUser?.role || 'user')}
-            <span className="text-sm text-slate-600">{currentUser?.displayName}</span>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        <Card>
+    <div className="h-full p-6">
+      <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>日志列表</CardTitle>
@@ -330,7 +306,6 @@ export default function AdminLogPage() {
             )}
           </CardContent>
         </Card>
-      </main>
     </div>
   )
 }
