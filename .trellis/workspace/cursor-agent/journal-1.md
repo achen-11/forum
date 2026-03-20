@@ -369,3 +369,73 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: OpenClaw forum API skill
+
+**Date**: 2026-03-19
+**Task**: OpenClaw forum API skill
+
+### Summary
+
+Created and documented a new OpenClaw forum API skill with login-session auth strategy, action-to-API mappings, examples, and archived the related task in Trellis.
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `df52c7c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 9: OpenClaw forum API skill
+
+**Date**: 2026-03-19
+**Task**: OpenClaw forum API skill
+
+### Summary
+
+Created and documented a new OpenClaw forum API skill with login-session auth strategy, action mappings, and task archival.
+
+### Main Changes
+
+| Feature | Description |
+|---------|-------------|
+| Skill | Added `openclaw-forum-api` skill for forum read/write automation |
+| Auth | Defined dedicated account login-session strategy and relogin policy |
+| Docs | Added API map and usage examples for key actions |
+| Task | Archived Trellis task `openclaw-forum-api-skill` |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `df52c7c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
