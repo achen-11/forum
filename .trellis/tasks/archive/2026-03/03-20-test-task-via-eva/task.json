@@ -1,0 +1,41 @@
+{
+  "id": "test-task-via-eva",
+  "name": "test-task-via-eva",
+  "title": "Test Task via Eva",
+  "description": "",
+  "status": "completed",
+  "dev_type": "backend",
+  "scope": null,
+  "priority": "P2",
+  "creator": "eva",
+  "assignee": "eva",
+  "createdAt": "2026-03-20",
+  "completedAt": "2026-03-20",
+  "branch": null,
+  "base_branch": "feat/ksqlite-fk-cascade-default",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": ""
+}

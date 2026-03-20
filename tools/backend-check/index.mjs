@@ -6,6 +6,7 @@ const SOURCE_PREFIXES = ["", "src"];
 const MODEL_RULES = {
   INVALID_STRING_TYPE: "MODEL-001",
   FIND_ALL_NO_ARGS: "MODEL-003",
+  JOIN_TABLE_MISSING_CASCADE: "MODEL-004",
 };
 
 const SERVICE_RULES = {
@@ -30,6 +31,26 @@ const API_RULES = {
 function lineNumberFor(content, index) {
   if (index < 0) return 1;
   return content.slice(0, index).split("\n").length;
+}
+
+/**
+ * 判断是否为 Join Table（关联表）
+ * Join Table 命名：两个实体名下划线分隔（如 Forum_Post_Tag, Forum_Collection）
+ * 注意：Forum_Post、Forum_Reply 是普通实体表，不是 Join Table，需排除
+ */
+function isJoinTable(filePath) {
+  const fileName = path.basename(filePath, ".ts");
+  // 匹配 X_Y 格式（两个首字母大写的单词用下划线分隔）
+  if (!/^[A-Z][a-z]+_[A-Z][a-z]+$/.test(fileName)) {
+    return false;
+  }
+  // 排除普通实体表（它们虽然符合 X_Y 格式但不是 Join Table）
+  const secondEntity = fileName.split("_")[1];
+  const falsePositives = ["Post", "Reply", "Category", "Tag", "User", "AdminLog"];
+  if (falsePositives.includes(secondEntity)) {
+    return false;
+  }
+  return true;
 }
 
 async function collectTsFiles(dir) {
@@ -109,6 +130,29 @@ function runModelRules(file, content) {
         "请改为 findAll({}) 或传入查询条件对象。",
       ),
     );
+  }
+
+  // MODEL-004: Join Table 的 ref 必须设置 onDelete: 'CASCADE'
+  if (content.includes("ksql.define") && isJoinTable(file)) {
+    // 查找所有 ref 定义，检查是否缺少 onDelete: 'CASCADE'
+    // 匹配模式：ref: { tableName: '...', fieldName: '...' [, onDelete: ...] }
+    const refBlockPattern = /ref\s*:\s*\{\s*[^}]+\}/g;
+    for (const match of content.matchAll(refBlockPattern)) {
+      const refBlock = match[0];
+      if (!/\bonDelete\s*:\s*['"]CASCADE['"]/.test(refBlock)) {
+        violations.push(
+          createViolation(
+            "model",
+            MODEL_RULES.JOIN_TABLE_MISSING_CASCADE,
+            "Blocker",
+            file,
+            lineNumberFor(content, match.index ?? -1),
+            "Join Table 外键缺少 onDelete: 'CASCADE'。",
+            "Join Table 的所有 ref 必须设置 onDelete: 'CASCADE' 以确保级联删除。",
+          ),
+        );
+      }
+    }
   }
 
   return violations;

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 ./.trellis/scripts/get_context.py)",
+      "Bash(git show:*)",
+      "Bash(node tools/backend-check/cli.mjs)",
+      "Bash(node tools/backend-check/cli.mjs --json)",
+      "Bash(node tools/backend-check/test-join-table-rule.mjs)",
+      "Bash(git checkout:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm type-check:*)"
+    ]
+  }
+}
