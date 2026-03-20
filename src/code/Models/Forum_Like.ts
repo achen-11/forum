@@ -6,7 +6,7 @@ const Forum_Like = ksql.define(
         userId: {
             type: DataTypes.String,
             required: true,
-            ref: { tableName: 'Forum_User', fieldName: '_id' },
+            ref: { tableName: 'Forum_User', fieldName: '_id', onDelete: 'CASCADE' },
             index: true
         },
         targetType: {
