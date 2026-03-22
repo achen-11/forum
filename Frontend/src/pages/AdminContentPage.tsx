@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AdminTable } from '@/components/AdminTable'
 import { adminContentApi } from '@/api/admin_content'
 import { useAuthStore } from '@/stores/authStore'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -15,7 +17,6 @@ import {
   ThumbsUp,
   Crown,
   Shield,
-  Loader2
 } from 'lucide-react'
 
 interface Post {
@@ -49,6 +50,7 @@ export default function AdminContentPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
 
@@ -57,10 +59,10 @@ export default function AdminContentPage() {
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
 
-  const fetchPosts = async (pageNum: number = 1) => {
+  const fetchPosts = async (pageNum: number = 1, pageSizeNum: number = pageSize) => {
     setLoading(true)
     try {
-      const res = await adminContentApi.getPostList({ page: pageNum, pageSize: 20 })
+      const res = await adminContentApi.getPostList({ page: pageNum, pageSize: pageSizeNum })
       setPosts(res.list)
       setPage(res.pagination.page)
       setTotalPages(res.pagination.totalPages)
@@ -77,13 +79,20 @@ export default function AdminContentPage() {
     fetchPosts()
   }, [isAdmin])
 
+  const handlePageChange = (newPage: number, newPageSize?: number) => {
+    if (newPageSize && newPageSize !== pageSize) {
+      setPageSize(newPageSize)
+    }
+    fetchPosts(newPage, newPageSize || pageSize)
+  }
+
   const handleDeletePost = async () => {
     if (!deletePostId) return
     try {
       await adminContentApi.deletePost(deletePostId)
       toast.success('删除成功')
       setDeletePostId(null)
-      fetchPosts(page)
+      fetchPosts(page, pageSize)
     } catch (err: any) {
       toast.error(err.message || '删除失败')
     }
@@ -94,7 +103,7 @@ export default function AdminContentPage() {
       await adminContentApi.pinPost(post._id, !post.isPinned)
       toast.success(post.isPinned ? '取消置顶成功' : '置顶成功')
       setPinPostId(null)
-      fetchPosts(page)
+      fetchPosts(page, pageSize)
     } catch (err: any) {
       toast.error(err.message || '操作失败')
     }
@@ -109,6 +118,101 @@ export default function AdminContentPage() {
     }
     return null
   }
+
+  const columns: ColumnDef<Post>[] = [
+    {
+      accessorKey: 'title',
+      header: '标题',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2 max-w-[300px]">
+          {row.original.isPinned && <Pin className="w-4 h-4 text-indigo-500 flex-shrink-0" />}
+          <span className="truncate font-medium">{row.original.title}</span>
+          {row.original.isEdited && (
+            <Badge variant="outline" className="text-xs ml-1">已编辑</Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'author.displayName',
+      header: '作者',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{row.original.author.displayName}</span>
+          {getRoleBadge(row.original.author.role)}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'category.name',
+      header: '分类',
+      cell: ({ row }) => row.original.category?.name || '-',
+    },
+    {
+      accessorKey: 'createdAt',
+      header: '发布时间',
+      cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
+      sortingFn: 'datetime',
+    },
+    {
+      accessorKey: 'viewCount',
+      header: '浏览',
+      cell: ({ row }) => (
+        <span className="flex items-center gap-1">
+          <Eye className="w-3.5 h-3.5" />
+          {row.original.viewCount}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'replyCount',
+      header: '回复',
+      cell: ({ row }) => (
+        <span className="flex items-center gap-1">
+          <MessageSquare className="w-3.5 h-3.5" />
+          {row.original.replyCount}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'likeCount',
+      header: '点赞',
+      cell: ({ row }) => (
+        <span className="flex items-center gap-1">
+          <ThumbsUp className="w-3.5 h-3.5" />
+          {row.original.likeCount}
+        </span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: '操作',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1"
+            onClick={() => setPinPostId(row.original._id)}
+          >
+            {row.original.isPinned ? (
+              <><PinOff className="w-4 h-4" /> 取消置顶</>
+            ) : (
+              <><Pin className="w-4 h-4" /> 置顶</>
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={() => setDeletePostId(row.original._id)}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
 
   if (!isAdmin) {
     return (
@@ -125,136 +229,30 @@ export default function AdminContentPage() {
   }
 
   return (
-    <div className="h-full">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>帖子列表</CardTitle>
-              <span className="text-sm text-slate-500">共 {total} 篇帖子</span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-              </div>
-            ) : posts.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
-                暂无帖子数据
-              </div>
-            ) : (
-              <>
-                <div className="space-y-4">
-                  {posts.map((post) => (
-                    <div
-                      key={post._id}
-                      className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            {post.isPinned && (
-                              <Pin className="w-4 h-4 text-indigo-500" />
-                            )}
-                            <h3 className="font-medium text-slate-800 truncate">
-                              {post.title}
-                            </h3>
-                            {post.isEdited && (
-                              <Badge variant="outline" className="text-xs">已编辑</Badge>
-                            )}
-                          </div>
-
-                          <p className="text-sm text-slate-500 line-clamp-2 mb-3">
-                            {post.summary}
-                          </p>
-
-                          <div className="flex items-center gap-4 text-xs text-slate-400">
-                            <span className="flex items-center gap-1">
-                              <span className="font-medium text-slate-600">{post.author.displayName}</span>
-                              {getRoleBadge(post.author.role)}
-                            </span>
-                            <span>|</span>
-                            <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                            {post.category && (
-                              <>
-                                <span>|</span>
-                                <span>{post.category.name}</span>
-                              </>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
-                            <span className="flex items-center gap-1">
-                              <Eye className="w-3.5 h-3.5" />
-                              {post.viewCount}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <MessageSquare className="w-3.5 h-3.5" />
-                              {post.replyCount}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <ThumbsUp className="w-3.5 h-3.5" />
-                              {post.likeCount}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1"
-                            onClick={() => setPinPostId(post._id)}
-                          >
-                            {post.isPinned ? (
-                              <><PinOff className="w-4 h-4" /> 取消置顶</>
-                            ) : (
-                              <><Pin className="w-4 h-4" /> 置顶</>
-                            )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => setDeletePostId(post._id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 mt-6">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page <= 1}
-                      onClick={() => fetchPosts(page - 1)}
-                    >
-                      上一页
-                    </Button>
-                    <span className="text-sm text-slate-500">
-                      第 {page} / {totalPages} 页
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page >= totalPages}
-                      onClick={() => fetchPosts(page + 1)}
-                    >
-                      下一页
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+    <div className="h-full p-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>帖子列表</CardTitle>
+            <span className="text-sm text-slate-500">共 {total} 篇帖子</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <AdminTable
+            columns={columns}
+            data={posts}
+            loading={loading}
+            globalFilterPlaceholder="搜索标题..."
+            pagination={{
+              page,
+              pageSize,
+              total,
+              totalPages,
+            }}
+            onPaginationChange={handlePageChange}
+          />
+        </CardContent>
+      </Card>
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

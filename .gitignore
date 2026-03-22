@@ -159,3 +159,5 @@ kooboo.d.ts
 .cursor
 
 .trellis/workspace/cursor-agent/stitch/*
+
+Frontend/@/*

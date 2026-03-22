@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AdminTable } from '@/components/AdminTable'
 import { adminCategoryApi } from '@/api/admin_category'
 import { useAuthStore } from '@/stores/authStore'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -17,13 +19,10 @@ import {
 } from '@/components/ui/dialog'
 import {
   Shield,
-  Loader2,
   Plus,
   Pencil,
   Trash2,
   Home,
-  ArrowUp,
-  ArrowDown
 } from 'lucide-react'
 
 interface Category {
@@ -128,6 +127,64 @@ export default function AdminCategoryPage() {
     setIsCreateOpen(true)
   }
 
+  const columns: ColumnDef<Category>[] = [
+    {
+      accessorKey: 'name',
+      header: '名称',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{row.original.name}</span>
+          {row.original.showOnHome && (
+            <Badge variant="outline" className="text-xs gap-1">
+              <Home className="w-3 h-3" /> 首页展示
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'description',
+      header: '描述',
+      cell: ({ row }) => row.original.description || '-',
+    },
+    {
+      accessorKey: 'sortOrder',
+      header: '排序',
+      cell: ({ row }) => row.original.sortOrder,
+      sortingFn: 'basic',
+    },
+    {
+      accessorKey: 'createdAt',
+      header: '创建时间',
+      cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
+      sortingFn: 'datetime',
+    },
+    {
+      id: 'actions',
+      header: '操作',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1"
+            onClick={() => openEditDialog(row.original)}
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={() => setDeleteCategoryId(row.original._id)}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
+
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -145,78 +202,24 @@ export default function AdminCategoryPage() {
   return (
     <div className="h-full p-6">
       <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>分类列表</CardTitle>
-              <Button className="gap-1" onClick={openCreateDialog}>
-                <Plus className="w-4 h-4" />
-                新建分类
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-              </div>
-            ) : categories.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
-                暂无分类数据
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {categories.map((category) => (
-                  <div
-                    key={category._id}
-                    className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-col gap-1 text-slate-400">
-                        <ArrowUp className="w-4 h-4" />
-                        <ArrowDown className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-slate-800">{category.name}</h3>
-                          {category.showOnHome && (
-                            <Badge variant="outline" className="text-xs gap-1">
-                              <Home className="w-3 h-3" /> 首页展示
-                            </Badge>
-                          )}
-                        </div>
-                        {category.description && (
-                          <p className="text-sm text-slate-500 mt-1">{category.description}</p>
-                        )}
-                        <p className="text-xs text-slate-400 mt-1">
-                          排序: {category.sortOrder} | 创建时间: {new Date(category.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1"
-                        onClick={() => openEditDialog(category)}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => setDeleteCategoryId(category._id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>分类列表</CardTitle>
+            <Button className="gap-1" onClick={openCreateDialog}>
+              <Plus className="w-4 h-4" />
+              新建分类
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <AdminTable
+            columns={columns}
+            data={categories}
+            loading={loading}
+            globalFilterPlaceholder="搜索分类名称..."
+          />
+        </CardContent>
+      </Card>
 
       {/* Create/Edit Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

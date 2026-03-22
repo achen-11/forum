@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AdminTable } from '@/components/AdminTable'
 import { adminUserApi } from '@/api/admin_user'
 import { useAuthStore } from '@/stores/authStore'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -11,10 +13,9 @@ import {
   Crown,
   Shield,
   User as UserIcon,
-  Loader2,
-  Search,
   Ban,
   CheckCircle,
+  Search,
 } from 'lucide-react'
 
 interface User {
@@ -36,6 +37,7 @@ export default function AdminUserPage() {
   const [loading, setLoading] = useState(true)
   const [keyword, setKeyword] = useState('')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
 
@@ -47,12 +49,12 @@ export default function AdminUserPage() {
   const isSuperAdmin = currentUser?.role === 'superadmin'
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin'
 
-  const fetchUsers = async (pageNum: number = 1, searchKeyword: string = keyword) => {
+  const fetchUsers = async (pageNum: number = 1, searchKeyword: string = keyword, pageSizeNum: number = pageSize) => {
     setLoading(true)
     try {
       const res = await adminUserApi.getUserList({
         page: pageNum,
-        pageSize: 20,
+        pageSize: pageSizeNum,
         keyword: searchKeyword,
       })
       setUsers(res.list)
@@ -71,9 +73,17 @@ export default function AdminUserPage() {
     fetchUsers()
   }, [isAdmin])
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    fetchUsers(1, keyword)
+  const handleSearch = (e?: React.FormEvent) => {
+    e?.preventDefault()
+    setPage(1)
+    fetchUsers(1, keyword, pageSize)
+  }
+
+  const handlePageChange = (newPage: number, newPageSize?: number) => {
+    if (newPageSize && newPageSize !== pageSize) {
+      setPageSize(newPageSize)
+    }
+    fetchUsers(newPage, keyword, newPageSize || pageSize)
   }
 
   const handleBanUser = async () => {
@@ -82,7 +92,7 @@ export default function AdminUserPage() {
       await adminUserApi.banUser(banUserId)
       toast.success('封禁成功')
       setBanUserId(null)
-      fetchUsers(page, keyword)
+      fetchUsers(page, keyword, pageSize)
     } catch (err: any) {
       toast.error(err.message || '封禁失败')
     }
@@ -94,7 +104,7 @@ export default function AdminUserPage() {
       await adminUserApi.unbanUser(unbanUserId)
       toast.success('解封成功')
       setUnbanUserId(null)
-      fetchUsers(page, keyword)
+      fetchUsers(page, keyword, pageSize)
     } catch (err: any) {
       toast.error(err.message || '解封失败')
     }
@@ -107,7 +117,7 @@ export default function AdminUserPage() {
       toast.success('角色变更成功')
       setRoleUserId(null)
       setNewRole('')
-      fetchUsers(page, keyword)
+      fetchUsers(page, keyword, pageSize)
     } catch (err: any) {
       toast.error(err.message || '角色变更失败')
     }
@@ -129,24 +139,109 @@ export default function AdminUserPage() {
   }
 
   const canChangeRole = (user: User) => {
-    // 只有超级管理员可以变更角色
     if (!isSuperAdmin) return false
-    // 不能修改自己
     if (user._id === currentUser?._id) return false
-    // 不能修改超级管理员
     if (user.role === 'superadmin') return false
     return true
   }
 
   const canBan = (user: User) => {
-    // 不能封禁自己
     if (user._id === currentUser?._id) return false
-    // 不能封禁超级管理员
     if (user.role === 'superadmin') return false
-    // 不能封禁管理员（除非是超级管理员）
     if (user.role === 'admin' && !isSuperAdmin) return false
     return isAdmin
   }
+
+  const columns: ColumnDef<User>[] = [
+    {
+      accessorKey: 'displayName',
+      header: '用户',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+            {row.original.avatar ? (
+              <img src={row.original.avatar} alt="" className="w-full h-full rounded-full" />
+            ) : (
+              <span className="text-indigo-600 font-semibold text-sm">
+                {(row.original.displayName || row.original.userName || '?').slice(0, 1).toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{row.original.displayName || row.original.userName}</span>
+              {getRoleBadge(row.original.role)}
+              {row.original.isBanned && (
+                <Badge className="bg-red-500 hover:bg-red-600 gap-1">
+                  <Ban className="w-3 h-3" /> 已封禁
+                </Badge>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground">@{row.original.userName}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'email',
+      header: '邮箱',
+      cell: ({ row }) => row.original.email || '-',
+    },
+    {
+      accessorKey: 'createdAt',
+      header: '注册时间',
+      cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
+      sortingFn: 'datetime',
+    },
+    {
+      accessorKey: 'lastLoginAt',
+      header: '最后登录',
+      cell: ({ row }) => row.original.lastLoginAt
+        ? new Date(row.original.lastLoginAt).toLocaleDateString()
+        : '-',
+      sortingFn: 'datetime',
+    },
+    {
+      id: 'actions',
+      header: '操作',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          {canChangeRole(row.original) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => openRoleDialog(row.original)}
+            >
+              {row.original.role === 'admin' ? '降为用户' : '升为管理员'}
+            </Button>
+          )}
+          {canBan(row.original) && (
+            row.original.isBanned ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                onClick={() => setUnbanUserId(row.original._id)}
+              >
+                <CheckCircle className="w-4 h-4" />
+                解封
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => setBanUserId(row.original._id)}
+              >
+                <Ban className="w-4 h-4" />
+                封禁
+              </Button>
+            )
+          )}
+        </div>
+      ),
+    },
+  ]
 
   if (!isAdmin) {
     return (
@@ -165,137 +260,42 @@ export default function AdminUserPage() {
   return (
     <div className="h-full p-6">
       <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>用户列表</CardTitle>
-              <form onSubmit={handleSearch} className="flex items-center gap-2">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>用户列表</CardTitle>
+            <form onSubmit={handleSearch} className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                   placeholder="搜索用户名、昵称、邮箱..."
-                  className="w-64"
+                  className="w-64 pl-8"
                 />
-                <Button type="submit" variant="outline" size="sm">
-                  <Search className="w-4 h-4" />
-                </Button>
-              </form>
-            </div>
-            <p className="text-sm text-slate-500 mt-2">共 {total} 个用户</p>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
               </div>
-            ) : users.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
-                暂无用户数据
-              </div>
-            ) : (
-              <>
-                <div className="space-y-3">
-                  {users.map((user) => (
-                    <div
-                      key={user._id}
-                      className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                          {user.avatar ? (
-                            <img src={user.avatar} alt="" className="w-full h-full rounded-full" />
-                          ) : (
-                            <span className="text-indigo-600 font-semibold">
-                              {(user.displayName || user.userName || '?').slice(0, 1).toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-slate-800">{user.displayName || user.userName}</p>
-                            {getRoleBadge(user.role)}
-                            {user.isBanned && (
-                              <Badge className="bg-red-500 hover:bg-red-600 gap-1">
-                                <Ban className="w-3 h-3" /> 已封禁
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-4 text-xs text-slate-400 mt-1">
-                            <span>@{user.userName}</span>
-                            {user.email && <span>{user.email}</span>}
-                            <span>注册于 {new Date(user.createdAt).toLocaleDateString()}</span>
-                            {user.lastLoginAt && (
-                              <span>最后登录 {new Date(user.lastLoginAt).toLocaleDateString()}</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {canChangeRole(user) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openRoleDialog(user)}
-                          >
-                            {user.role === 'admin' ? '降为用户' : '升为管理员'}
-                          </Button>
-                        )}
-                        {canBan(user) && (
-                          user.isBanned ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
-                              onClick={() => setUnbanUserId(user._id)}
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                              解封
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => setBanUserId(user._id)}
-                            >
-                              <Ban className="w-4 h-4" />
-                              封禁
-                            </Button>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 mt-6">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page <= 1}
-                      onClick={() => fetchUsers(page - 1, keyword)}
-                    >
-                      上一页
-                    </Button>
-                    <span className="text-sm text-slate-500">
-                      第 {page} / {totalPages} 页
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page >= totalPages}
-                      onClick={() => fetchUsers(page + 1, keyword)}
-                    >
-                      下一页
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+              <Button type="submit" variant="outline" size="sm">
+                搜索
+              </Button>
+            </form>
+          </div>
+          <p className="text-sm text-slate-500 mt-2">共 {total} 个用户</p>
+        </CardHeader>
+        <CardContent>
+          <AdminTable
+            columns={columns}
+            data={users}
+            loading={loading}
+            globalFilterPlaceholder="搜索用户..."
+            pagination={{
+              page,
+              pageSize,
+              total,
+              totalPages,
+            }}
+            onPaginationChange={handlePageChange}
+          />
+        </CardContent>
+      </Card>
 
       {/* Ban Confirmation Dialog */}
       <ConfirmDialog

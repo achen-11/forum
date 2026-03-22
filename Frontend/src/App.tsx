@@ -9,6 +9,7 @@ import PostDetailPage from './pages/PostDetailPage'
 import ProfilePage from './pages/ProfilePage'
 import UserProfilePage from './pages/UserProfilePage'
 import AdminLayout from './components/AdminLayout'
+import AdminDashboardPage from './pages/AdminDashboardPage'
 import AdminContentPage from './pages/AdminContentPage'
 import AdminCategoryPage from './pages/AdminCategoryPage'
 import AdminTagPage from './pages/AdminTagPage'
@@ -99,7 +100,7 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/admin/content" replace />} />
+          <Route index element={<AdminDashboardPage />} />
           <Route path="content" element={<AdminContentPage />} />
           <Route path="category" element={<AdminCategoryPage />} />
           <Route path="tag" element={<AdminTagPage />} />
