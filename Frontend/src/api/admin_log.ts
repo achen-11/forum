@@ -9,7 +9,7 @@ export const adminLogApi = {
   getLogList: (params?: {
     page?: number
     pageSize?: number
-    action?: string
+    actionType?: string
     targetType?: string
     operatorId?: string
   }) =>

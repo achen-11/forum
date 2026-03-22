@@ -17,19 +17,26 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/authStore'
 import {
+  ChevronDown,
+  Crown,
+  Shield,
+  LogOut,
+  LayoutDashboard,
   FileText,
   FolderOpen,
   Tags,
   Users,
   ScrollText,
-  ChevronDown,
-  Crown,
-  Shield,
-  LogOut,
 } from 'lucide-react'
 import { useState } from 'react'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 const adminMenuItems = [
+  {
+    title: '概览',
+    icon: LayoutDashboard,
+    path: '/admin',
+  },
   {
     title: '内容管理',
     icon: FileText,
@@ -61,6 +68,7 @@ function AdminSidebar() {
   const location = useLocation()
   const { user, logout } = useAuthStore()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const isMobile = useIsMobile()
 
   const handleLogout = async () => {
     setShowUserMenu(false)
@@ -79,7 +87,7 @@ function AdminSidebar() {
 
   return (
     <Sidebar side="left" variant="sidebar" collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border">
+      <SidebarHeader className="border-sidebar-border">
         <div className="flex items-center gap-2 px-2 h-14">
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-lg">F</span>
@@ -98,7 +106,10 @@ function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {adminMenuItems.map((item) => {
-                const isActive = location.pathname === item.path
+                // For dashboard, check if path is /admin and location is exactly /admin
+                const isActive = item.path === '/admin'
+                  ? location.pathname === '/admin'
+                  : location.pathname === item.path
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
@@ -119,7 +130,7 @@ function AdminSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
+      <SidebarFooter className=" border-sidebar-border">
         <div className="p-2">
           <div className="relative">
             <button
@@ -143,7 +154,10 @@ function AdminSidebar() {
             </button>
 
             {showUserMenu && (
-              <div className="absolute bottom-full left-0 mb-1 w-full bg-sidebar rounded-md shadow-lg border border-sidebar-border py-1 z-50">
+              <div className={`
+                absolute bottom-full left-0 mb-1 w-full bg-sidebar rounded-md shadow-lg border border-sidebar-border py-1 z-50
+                ${isMobile ? '' : ''}
+              `}>
                 <Link
                   to="/"
                   className="flex items-center gap-2 px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
@@ -168,21 +182,36 @@ function AdminSidebar() {
   )
 }
 
+function SiteHeader() {
+  const location = useLocation()
+
+  // Get page title based on current path
+  const getPageTitle = () => {
+    const currentItem = adminMenuItems.find(item => {
+      if (item.path === '/admin') {
+        return location.pathname === '/admin'
+      }
+      return location.pathname === item.path
+    })
+    return currentItem?.title || '管理后台'
+  }
+
+  return (
+    <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4">
+      <SidebarTrigger />
+      <h1 className="text-lg font-semibold">{getPageTitle()}</h1>
+    </header>
+  )
+}
+
 export default function AdminLayout() {
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="flex h-svh w-full">
         <AdminSidebar />
         <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Top bar */}
-          <header className="h-14 border-b border-border bg-background flex items-center px-4 gap-4">
-            <SidebarTrigger />
-            <div className="flex-1">
-              {/* Breadcrumb or page title could go here */}
-            </div>
-          </header>
-          {/* Content area */}
-          <div className="flex-1 overflow-auto bg-muted/30">
+          <SiteHeader />
+          <div className="flex-1 overflow-auto bg-muted/30 p-4">
             <Outlet />
           </div>
         </main>

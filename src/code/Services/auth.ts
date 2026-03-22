@@ -453,7 +453,14 @@ export function logout(): void {
  * 获取当前用户信息
  */
 export function getCurrentUser() {
-    const token = k.cookie.get(COOKIE_TOKEN_KEY)
+    // 优先从 Authorization header 获取 token
+    let token: string | undefined = k.request.headers.get?.('Authorization')
+    if (token) {
+        if (token.startsWith('Bearer ')) token = token.slice(7)
+    } else {
+        // 降级到 cookie
+        token = k.cookie.get(COOKIE_TOKEN_KEY)
+    }
     if (!token) return null
 
     const decoded = k.security.jwt.decode(token)

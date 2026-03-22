@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AdminTable } from '@/components/AdminTable'
 import { adminTagApi } from '@/api/admin_tag'
 import { useAuthStore } from '@/stores/authStore'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -16,7 +18,6 @@ import {
 } from '@/components/ui/dialog'
 import {
   Shield,
-  Loader2,
   Plus,
   Pencil,
   Trash2,
@@ -132,6 +133,67 @@ export default function AdminTagPage() {
     setIsCreateOpen(true)
   }
 
+  const columns: ColumnDef<Tag>[] = [
+    {
+      accessorKey: 'name',
+      header: '名称',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <div
+            className="w-4 h-4 rounded-full"
+            style={{ backgroundColor: row.original.color }}
+          />
+          <span className="font-medium">{row.original.name}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'color',
+      header: '颜色',
+      cell: ({ row }) => (
+        <code className="text-xs bg-muted px-2 py-1 rounded">
+          {row.original.color}
+        </code>
+      ),
+    },
+    {
+      accessorKey: 'usageCount',
+      header: '使用次数',
+      cell: ({ row }) => row.original.usageCount,
+      sortingFn: 'basic',
+    },
+    {
+      accessorKey: 'createdAt',
+      header: '创建时间',
+      cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
+      sortingFn: 'datetime',
+    },
+    {
+      id: 'actions',
+      header: '操作',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1"
+            onClick={() => openEditDialog(row.original)}
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={() => setDeleteTagId(row.original._id)}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
+
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -149,66 +211,24 @@ export default function AdminTagPage() {
   return (
     <div className="h-full p-6">
       <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>标签列表</CardTitle>
-              <Button className="gap-1" onClick={openCreateDialog}>
-                <Plus className="w-4 h-4" />
-                新建标签
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-              </div>
-            ) : tags.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
-                暂无标签数据
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {tags.map((tag) => (
-                  <div
-                    key={tag._id}
-                    className="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div
-                        className="w-4 h-4 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: tag.color }}
-                      />
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-800 truncate">{tag.name}</p>
-                        <p className="text-xs text-slate-400">{tag.usageCount} 篇帖子</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => openEditDialog(tag)}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => setDeleteTagId(tag._id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>标签列表</CardTitle>
+            <Button className="gap-1" onClick={openCreateDialog}>
+              <Plus className="w-4 h-4" />
+              新建标签
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <AdminTable
+            columns={columns}
+            data={tags}
+            loading={loading}
+            globalFilterPlaceholder="搜索标签名称..."
+          />
+        </CardContent>
+      </Card>
 
       {/* Create/Edit Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

@@ -1,20 +1,26 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
+import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AdminTable } from '@/components/AdminTable'
 import { adminLogApi } from '@/api/admin_log'
 import { useAuthStore } from '@/stores/authStore'
 import {
   Shield,
-  Loader2,
   FileText,
   MessageSquare,
   Folder,
   Tag,
   User,
-  ChevronDown,
 } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface LogEntry {
   _id: string
@@ -76,22 +82,22 @@ export default function AdminLogPage() {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
 
   const [actionFilter, setActionFilter] = useState('')
   const [targetTypeFilter, setTargetTypeFilter] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
 
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin'
 
-  const fetchLogs = async (pageNum: number = 1) => {
+  const fetchLogs = async (pageNum: number = 1, pageSizeNum: number = pageSize) => {
     setLoading(true)
     try {
       const res = await adminLogApi.getLogList({
         page: pageNum,
-        pageSize: 20,
-        action: actionFilter || undefined,
+        pageSize: pageSizeNum,
+        actionType: actionFilter || undefined,
         targetType: targetTypeFilter || undefined,
       })
       setLogs(res.list)
@@ -110,13 +116,16 @@ export default function AdminLogPage() {
     fetchLogs()
   }, [isAdmin, actionFilter, targetTypeFilter])
 
-  const handleFilterChange = () => {
-    fetchLogs(1)
+  const handlePageChange = (newPage: number, newPageSize?: number) => {
+    if (newPageSize && newPageSize !== pageSize) {
+      setPageSize(newPageSize)
+    }
+    fetchLogs(newPage, newPageSize || pageSize)
   }
 
-  const clearFilters = () => {
-    setActionFilter('')
-    setTargetTypeFilter('')
+  const handleFilterChange = () => {
+    setPage(1)
+    fetchLogs(1, pageSize)
   }
 
   const formatDetail = (action: string, detail: Record<string, any> | null): string => {
@@ -145,6 +154,57 @@ export default function AdminLogPage() {
     }
   }
 
+  const columns: ColumnDef<LogEntry>[] = [
+    {
+      accessorKey: 'action',
+      header: '操作类型',
+      cell: ({ row }) => (
+        <Badge className={getActionColor(row.original.action)}>
+          {ACTION_LABELS[row.original.action] || row.original.action}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: 'targetType',
+      header: '对象类型',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          {TARGET_TYPE_ICONS[row.original.targetType] || <FileText className="w-4 h-4" />}
+          <span>{TARGET_TYPE_LABELS[row.original.targetType] || row.original.targetType}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'detail',
+      header: '明细',
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">
+          {formatDetail(row.original.action, row.original.detail)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'operatorName',
+      header: '操作者',
+      cell: ({ row }) => row.original.operatorName,
+    },
+    {
+      accessorKey: 'createdAt',
+      header: '操作时间',
+      cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
+      sortingFn: 'datetime',
+    },
+    {
+      accessorKey: 'targetId',
+      header: '对象ID',
+      cell: ({ row }) => (
+        <code className="text-xs bg-muted px-2 py-1 rounded">
+          {row.original.targetId.slice(0, 8)}...
+        </code>
+      ),
+    },
+  ]
+
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -162,150 +222,63 @@ export default function AdminLogPage() {
   return (
     <div className="h-full p-6">
       <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>日志列表</CardTitle>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowFilters(!showFilters)}
-                >
-                  <ChevronDown className="w-4 h-4 mr-1" />
-                  筛选
-                </Button>
-                {(actionFilter || targetTypeFilter) && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    清除筛选
-                  </Button>
-                )}
-              </div>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>日志列表</CardTitle>
+            <div className="flex items-center gap-2">
+              <Select value={actionFilter || '__all__'} onValueChange={(v) => { setActionFilter(v === '__all__' ? '' : v); handleFilterChange(); }}>
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="操作类型" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">全部</SelectItem>
+                  <SelectItem value="POST_DELETE">删除帖子</SelectItem>
+                  <SelectItem value="POST_PIN">置顶帖子</SelectItem>
+                  <SelectItem value="POST_UNPIN">取消置顶</SelectItem>
+                  <SelectItem value="CATEGORY_CREATE">创建分类</SelectItem>
+                  <SelectItem value="CATEGORY_UPDATE">更新分类</SelectItem>
+                  <SelectItem value="CATEGORY_DELETE">删除分类</SelectItem>
+                  <SelectItem value="TAG_CREATE">创建标签</SelectItem>
+                  <SelectItem value="TAG_UPDATE">更新标签</SelectItem>
+                  <SelectItem value="TAG_DELETE">删除标签</SelectItem>
+                  <SelectItem value="USER_ROLE_CHANGE">变更角色</SelectItem>
+                  <SelectItem value="USER_BAN">封禁用户</SelectItem>
+                  <SelectItem value="USER_UNBAN">解封用户</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={targetTypeFilter || '__all__'} onValueChange={(v) => { setTargetTypeFilter(v === '__all__' ? '' : v); handleFilterChange(); }}>
+                <SelectTrigger className="w-28">
+                  <SelectValue placeholder="对象类型" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">全部</SelectItem>
+                  <SelectItem value="post">帖子</SelectItem>
+                  <SelectItem value="reply">回复</SelectItem>
+                  <SelectItem value="category">分类</SelectItem>
+                  <SelectItem value="tag">标签</SelectItem>
+                  <SelectItem value="user">用户</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-
-            {/* Filters */}
-            {showFilters && (
-              <div className="flex items-center gap-4 mt-4 p-4 bg-slate-50 rounded-lg">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-500">操作类型</label>
-                  <select
-                    value={actionFilter}
-                    onChange={(e) => {
-                      setActionFilter(e.target.value)
-                    }}
-                    onBlur={handleFilterChange}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                  >
-                    <option value="">全部</option>
-                    <option value="POST_DELETE">删除帖子</option>
-                    <option value="POST_PIN">置顶帖子</option>
-                    <option value="POST_UNPIN">取消置顶</option>
-                    <option value="REPLY_DELETE">删除回复</option>
-                    <option value="CATEGORY_CREATE">创建分类</option>
-                    <option value="CATEGORY_UPDATE">更新分类</option>
-                    <option value="CATEGORY_DELETE">删除分类</option>
-                    <option value="TAG_CREATE">创建标签</option>
-                    <option value="TAG_UPDATE">更新标签</option>
-                    <option value="TAG_DELETE">删除标签</option>
-                    <option value="USER_ROLE_CHANGE">变更角色</option>
-                    <option value="USER_BAN">封禁用户</option>
-                    <option value="USER_UNBAN">解封用户</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-500">对象类型</label>
-                  <select
-                    value={targetTypeFilter}
-                    onChange={(e) => {
-                      setTargetTypeFilter(e.target.value)
-                    }}
-                    onBlur={handleFilterChange}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                  >
-                    <option value="">全部</option>
-                    <option value="post">帖子</option>
-                    <option value="reply">回复</option>
-                    <option value="category">分类</option>
-                    <option value="tag">标签</option>
-                    <option value="user">用户</option>
-                  </select>
-                </div>
-              </div>
-            )}
-
-            <p className="text-sm text-slate-500 mt-2">共 {total} 条记录</p>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-              </div>
-            ) : logs.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
-                暂无日志数据
-              </div>
-            ) : (
-              <>
-                <div className="space-y-3">
-                  {logs.map((log) => (
-                    <div
-                      key={log._id}
-                      className="flex items-start gap-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="flex-shrink-0 mt-1">
-                        {TARGET_TYPE_ICONS[log.targetType] || <FileText className="w-4 h-4" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge className={getActionColor(log.action)}>
-                            {ACTION_LABELS[log.action] || log.action}
-                          </Badge>
-                          <Badge variant="outline">
-                            {TARGET_TYPE_LABELS[log.targetType] || log.targetType}
-                          </Badge>
-                          <span className="text-xs text-slate-400">
-                            {TARGET_TYPE_LABELS[log.targetType] || log.targetType} ID: {log.targetId.slice(0, 8)}...
-                          </span>
-                        </div>
-                        {formatDetail(log.action, log.detail) && (
-                          <p className="text-sm text-slate-600 mt-2">{formatDetail(log.action, log.detail)}</p>
-                        )}
-                        <div className="flex items-center gap-4 text-xs text-slate-400 mt-2">
-                          <span>操作者: {log.operatorName}</span>
-                          <span>操作时间: {new Date(log.createdAt).toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 mt-6">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page <= 1}
-                      onClick={() => fetchLogs(page - 1)}
-                    >
-                      上一页
-                    </Button>
-                    <span className="text-sm text-slate-500">
-                      第 {page} / {totalPages} 页
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page >= totalPages}
-                      onClick={() => fetchLogs(page + 1)}
-                    >
-                      下一页
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+          <p className="text-sm text-slate-500 mt-2">共 {total} 条记录</p>
+        </CardHeader>
+        <CardContent>
+          <AdminTable
+            columns={columns}
+            data={logs}
+            loading={loading}
+            globalFilterPlaceholder="搜索日志..."
+            pagination={{
+              page,
+              pageSize,
+              total,
+              totalPages,
+            }}
+            onPaginationChange={handlePageChange}
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }
