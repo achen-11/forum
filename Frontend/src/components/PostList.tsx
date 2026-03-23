@@ -23,7 +23,7 @@ export function PostList() {
     )
   }
 
-  if (posts.length === 0) {
+  if (!posts || posts.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-8 text-center">
         <p className="text-slate-400">暂无帖子</p>

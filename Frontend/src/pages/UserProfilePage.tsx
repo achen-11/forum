@@ -59,7 +59,7 @@ export default function UserProfilePage() {
       .then(([userData, postsData, followersData, , commentsData, followingStatus]) => {
         if (!cancelled) {
           setUser(userData)
-          setPosts(postsData)
+          setPosts(postsData.list)
           setFollowersCount(followersData.count)
           setComments(commentsData)
           setIsFollowing(followingStatus.isFollowing)

@@ -46,8 +46,8 @@ export const usePostStore = create<PostState>((set, get) => ({
   fetchPosts: async (categoryId?: string) => {
     set({ isLoading: true, error: null })
     try {
-      const posts = await postApi.getPostList(categoryId)
-      set({ posts, isLoading: false })
+      const data = await postApi.getPostList(categoryId)
+      set({ posts: data.list || [], isLoading: false })
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false })
     }

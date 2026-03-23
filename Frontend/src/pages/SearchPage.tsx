@@ -149,11 +149,11 @@ export default function SearchPage() {
           setPagination(res.pagination)
         } else if (categoryId) {
           const res = await postApi.getPostList(categoryId)
-          setPosts(res)
+          setPosts(res.list)
           setPagination(null)
         } else {
           const res = await postApi.getPostList()
-          setPosts(res)
+          setPosts(res.list)
           setPagination(null)
         }
       } catch (error) {

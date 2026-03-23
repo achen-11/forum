@@ -57,55 +57,107 @@ export class ForumPostService {
      * 获取帖子列表
      * @param categoryId 可选的分类 ID
      * @param authorId 可选的作者 ID（用于个人中心「我的帖子」）
+     * @param page 页码（从 1 开始）
+     * @param pageSize 每页数量
      */
-    static getPostList(categoryId?: string, authorId?: string) {
-        // 构建查询条件
-        const where: Record<string, unknown> = {}
+    static getPostList(categoryId?: string, authorId?: string, page: number = 1, pageSize: number = 10) {
+        // 参数校验
+        const pageNum = Math.max(1, page)
+        const size = Math.min(50, Math.max(1, pageSize))
+        const offset = (pageNum - 1) * size
+
+        // 构建 WHERE 子句
+        let whereClause = 'WHERE p.isDeleted = 0'
+        const params: Record<string, unknown> = {
+            offset,
+            limit: size
+        }
+
         if (categoryId) {
-            where.categoryId = categoryId
+            whereClause += ' AND p.categoryId = @categoryId'
+            params.categoryId = categoryId
         }
         if (authorId) {
-            where.authorId = authorId
+            whereClause += ' AND p.authorId = @authorId'
+            params.authorId = authorId
         }
 
-        // 查询帖子
-        const posts = Forum_Post.findAll(where, {
-            order: [
-                { prop: 'isPinned', order: 'DESC' },  // 置顶帖排在前面
-                { prop: 'createdAt', order: 'DESC' }  // 然后按时间倒序
-            ]
-        })
+        // 使用原生 SQL 进行分页查询
+        const sql = `
+            SELECT p.*,
+                   u._id as author_id,
+                   u.userName as author_userName,
+                   u.displayName as author_displayName,
+                   u.avatar as author_avatar,
+                   c._id as category_id,
+                   c.name as category_name
+            FROM Forum_Post p
+            LEFT JOIN Forum_User u ON p.authorId = u._id
+            LEFT JOIN Forum_Category c ON p.categoryId = c._id
+            ${whereClause}
+            ORDER BY p.isPinned DESC, p.createdAt DESC
+            LIMIT @limit OFFSET @offset
+        `
+        // @ts-ignore
+        const posts = k.DB.sqlite.query(sql, params) as Array<{
+            _id: string
+            title: string
+            content: string
+            summary: string
+            authorId: string
+            categoryId: string
+            viewCount: number
+            replyCount: number
+            likeCount: number
+            isPinned: boolean
+            createdAt: string
+            updatedAt: string
+            author_id: string
+            author_userName: string
+            author_displayName: string
+            author_avatar: string
+            category_id: string
+            category_name: string
+        }>
 
-        // 关联查询作者和分类信息
-        const postsWithRelations = posts.map(post => {
-            // 获取作者信息
-            let author = null
-            if (post.authorId) {
-                author = Forum_User.findOne({ _id: post.authorId })
+        // 格式化返回结果
+        const list = posts.map(post => ({
+            _id: post._id,
+            title: post.title,
+            content: post.content,
+            summary: post.summary,
+            viewCount: post.viewCount,
+            replyCount: post.replyCount,
+            likeCount: post.likeCount,
+            isPinned: post.isPinned,
+            createdAt: post.createdAt,
+            updatedAt: post.updatedAt,
+            author: post.author_id ? {
+                _id: post.author_id,
+                userName: post.author_userName,
+                displayName: post.author_displayName,
+                avatar: post.author_avatar
+            } : null,
+            category: post.category_id ? {
+                _id: post.category_id,
+                name: post.category_name
+            } : null
+        }))
+
+        // 获取总数用于分页
+        let countSql = `SELECT COUNT(*) as total FROM Forum_Post p ${whereClause}`
+        const countResult = k.DB.sqlite.query(countSql, params) as unknown as Array<{ total: number }>
+        const total = countResult[0]?.total || 0
+
+        return {
+            list,
+            pagination: {
+                page: pageNum,
+                pageSize: size,
+                total,
+                totalPages: Math.ceil(total / size)
             }
-
-            // 获取分类信息
-            let category = null
-            if (post.categoryId) {
-                category = Forum_Category.findOne({ _id: post.categoryId })
-            }
-
-            return {
-                ...post,
-                author: author ? {
-                    _id: author._id,
-                    userName: author.userName,
-                    displayName: author.displayName,
-                    avatar: author.avatar
-                } : null,
-                category: category ? {
-                    _id: category._id,
-                    name: category.name
-                } : null
-            }
-        })
-
-        return postsWithRelations
+        }
     }
 
     /**

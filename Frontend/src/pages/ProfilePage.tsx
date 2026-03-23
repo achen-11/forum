@@ -46,6 +46,12 @@ export default function ProfilePage() {
   const [solvedCount, setSolvedCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Posts pagination states
+  const [postsPage, setPostsPage] = useState(1)
+  const [postsTotalPages, setPostsTotalPages] = useState(1)
+  const [postsLoading, setPostsLoading] = useState(false)
+  const PAGE_SIZE = 10
+
   // Edit profile states
   const [editOpen, setEditOpen] = useState(false)
   const [editDisplayName, setEditDisplayName] = useState('')
@@ -78,19 +84,21 @@ export default function ProfilePage() {
     setIsLoading(true)
 
     Promise.all([
-      postApi.getPostList(undefined, user._id),
+      postApi.getPostList(undefined, user._id, 1, PAGE_SIZE),
       authApi.getUserComments(user._id),
       postApi.getSavedPosts(1, 1), // 获取收藏列表（仅需总数）
       postApi.getUserSolvedCount(user._id), // 获取已解决帖子数
     ])
       .then(([postsData, commentsData, savedData, solvedCount]) => {
         if (!cancelled) {
-          setMyPosts(postsData)
-          setPostsCount(postsData.length)
+          setMyPosts(postsData.list)
+          setPostsCount(postsData.pagination.total)
+          setPostsPage(1)
+          setPostsTotalPages(postsData.pagination.totalPages)
           setComments(commentsData)
           setCommentsCount(commentsData.length)
           // Calculate total likes from posts
-          const totalLikes = postsData.reduce((acc, post) => acc + (post.likeCount || 0), 0)
+          const totalLikes = postsData.list.reduce((acc, post) => acc + (post.likeCount || 0), 0)
           setLikesCount(totalLikes)
           // Set saved count from API
           setSavedCount(savedData.pagination.total)
@@ -176,6 +184,23 @@ export default function ProfilePage() {
       toast.error(err instanceof Error ? err.message : '修改失败')
     } finally {
       setPasswordLoading(false)
+    }
+  }
+
+  // Handle load more posts
+  const handleLoadMorePosts = async () => {
+    if (!user?._id || postsLoading) return
+    const nextPage = postsPage + 1
+    setPostsLoading(true)
+    try {
+      const data = await postApi.getPostList(undefined, user._id, nextPage, PAGE_SIZE)
+      setMyPosts(prev => [...prev, ...data.list])
+      setPostsPage(nextPage)
+      setPostsTotalPages(data.pagination.totalPages)
+    } catch (err) {
+      toast.error('加载失败')
+    } finally {
+      setPostsLoading(false)
     }
   }
 
@@ -406,6 +431,19 @@ export default function ProfilePage() {
                       onClick={() => navigate(`/post/${post._id}`)}
                     />
                   ))}
+                  {postsPage < postsTotalPages && (
+                    <div className="flex justify-center pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={handleLoadMorePosts}
+                        disabled={postsLoading}
+                        className="gap-2"
+                      >
+                        {postsLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                        加载更多
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

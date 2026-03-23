@@ -24,13 +24,16 @@ k.api.get('categories', () => {
 /**
  * 获取帖子列表
  * 支持 categoryId、authorId 参数筛选（authorId 用于个人中心「我的帖子」）
+ * 支持分页参数 page、pageSize
  */
 k.api.get('list', () => {
     try {
         const categoryId = k.request.get('categoryId') || undefined
         const authorId = k.request.get('authorId') || undefined
-        const posts = ForumPostService.getPostList(categoryId, authorId)
-        return successResponse({ posts })
+        const page = parseInt(k.request.get('page') || '1', 10)
+        const pageSize = parseInt(k.request.get('pageSize') || '10', 10)
+        const result = ForumPostService.getPostList(categoryId, authorId, page, pageSize)
+        return successResponse(result)
     } catch (e: any) {
         return failResponse(e?.message || '获取帖子列表失败')
     }
