@@ -60,8 +60,13 @@ export default function ProfilePage() {
   const [browserNotifications, setBrowserNotifications] = useState(false)
   const [weeklyDigest, setWeeklyDigest] = useState(true)
 
-  // 2FA state (placeholder)
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
+  // Change password modal states
+  const [passwordOpen, setPasswordOpen] = useState(false)
+  const [oldPassword, setOldPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordLoading, setPasswordLoading] = useState(false)
+
 
   // Saved posts state
   const [savedLoading, setSavedLoading] = useState(false)
@@ -137,6 +142,43 @@ export default function ProfilePage() {
     navigate('/login')
   }
 
+  // Handle change password
+  const handleSubmitPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!oldPassword.trim()) {
+      toast.error('请输入当前密码')
+      return
+    }
+    if (!newPassword.trim()) {
+      toast.error('请输入新密码')
+      return
+    }
+    if (newPassword.length < 6) {
+      toast.error('密码长度至少6位')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('两次输入的密码不一致')
+      return
+    }
+    setPasswordLoading(true)
+    try {
+      await authApi.changePassword({
+        oldPassword: oldPassword.trim(),
+        newPassword: newPassword.trim()
+      })
+      toast.success('密码修改成功')
+      setPasswordOpen(false)
+      setOldPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '修改失败')
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
   // Handle avatar upload
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -155,9 +197,13 @@ export default function ProfilePage() {
     setUploadLoading(true)
     try {
       const url = await postApi.uploadImage(file)
+      // 同时更新本地预览和服务端数据
       setEditAvatar(url)
-      const previewUrl = URL.createObjectURL(file)
-      setAvatarPreview(previewUrl)
+      setAvatarPreview(url)
+      // 调用 API 持久化头像
+      await authApi.updateProfile({ avatar: url })
+      // 更新本地用户状态
+      updateProfile({ avatar: url })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '上传失败')
     } finally {
@@ -206,7 +252,6 @@ export default function ProfilePage() {
     )
   }
 
-  const hasAvatar = user.avatar && user.avatar.trim() !== ''
   const displayName = user.displayName || user.userName || '用户'
 
   // Render content based on active nav
@@ -225,8 +270,8 @@ export default function ProfilePage() {
                   {/* Avatar */}
                   <div className="relative group">
                     <div className="w-24 h-24 rounded-2xl border-4 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 overflow-hidden shadow-lg">
-                      {hasAvatar ? (
-                        <img src={user.avatar} alt={displayName} className="w-full h-full object-cover" />
+                      {(avatarPreview || user.avatar) ? (
+                        <img src={avatarPreview || user.avatar} alt={displayName} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary text-3xl font-bold">
                           {displayName.slice(0, 2)}
@@ -297,35 +342,12 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-4">
-                {/* 2FA Toggle */}
-                <div className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-800">
-                  <div>
-                    <p className="text-sm font-semibold">两步验证</p>
-                    <p className="text-xs text-slate-500">启用两步验证保护账户</p>
-                  </div>
-                  <button
-                    onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
-                    className={`w-10 h-5 rounded-full relative transition-colors ${
-                      twoFactorEnabled ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${
-                        twoFactorEnabled ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
                 {/* Change Password */}
-                <button className="w-full text-left flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <button
+                  onClick={() => setPasswordOpen(true)}
+                  className="w-full text-left flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
                   <span className="text-sm font-medium">修改密码</span>
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                </button>
-
-                {/* Login Sessions */}
-                <button className="w-full text-left flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                  <span className="text-sm font-medium">登录会话</span>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </button>
               </div>
@@ -678,6 +700,83 @@ export default function ProfilePage() {
                     setEditDisplayName(user.displayName ?? '')
                     setEditAvatar(user.avatar ?? '')
                     setAvatarPreview('')
+                  }}
+                >
+                  取消
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {passwordOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">修改密码</h2>
+              <button
+                onClick={() => setPasswordOpen(false)}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitPassword} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">当前密码</label>
+                <Input
+                  type="password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  placeholder="输入当前密码"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">新密码</label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="输入新密码"
+                  className="mt-1"
+                  maxLength={20}
+                />
+                <p className="text-xs text-slate-500 mt-1">密码长度 6-20 位</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">确认新密码</label>
+                <Input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="再次输入新密码"
+                  className="mt-1"
+                  maxLength={20}
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button type="submit" disabled={passwordLoading} className="flex-1">
+                  {passwordLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    '保存'
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setPasswordOpen(false)
+                    setOldPassword('')
+                    setNewPassword('')
+                    setConfirmPassword('')
                   }}
                 >
                   取消

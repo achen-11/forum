@@ -66,6 +66,12 @@ export const authApi = {
     http.post<UserInfo>(`${API_BASE}/update-profile`, data),
 
   /**
+   * 修改密码
+   */
+  changePassword: (data: { oldPassword: string; newPassword: string }) =>
+    http.post<null>(`${API_BASE}/change-password`, data),
+
+  /**
    * 关注用户
    */
   follow: (followingId: string) =>

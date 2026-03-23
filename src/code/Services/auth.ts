@@ -533,3 +533,37 @@ export function updateProfile(updates: { displayName?: string; avatar?: string }
     if (!updated) throw new Error('更新失败')
     return getCurrentUser()
 }
+
+/**
+ * 修改密码（需登录，验证旧密码）
+ */
+export function changePassword(body: {
+    oldPassword: string
+    newPassword: string
+}) {
+    const { oldPassword, newPassword } = body
+    const user = getCurrentUser()
+    if (!user || !user._id) {
+        throw new Error('请先登录')
+    }
+
+    if (!oldPassword?.trim()) throw new Error('请输入当前密码')
+    if (!newPassword?.trim()) throw new Error('请输入新密码')
+    const pwd = newPassword.trim()
+    if (pwd.length < 6) throw new Error('密码长度至少6位')
+    if (pwd.length > 20) throw new Error('密码长度不能超过20位')
+
+    // 验证旧密码
+    const dbUser = Forum_User.findById(user._id) as any
+    if (!dbUser || !dbUser._id) throw new Error('用户不存在')
+    const md5Old = k.security.md5(oldPassword.trim())
+    if (dbUser.password !== md5Old) throw new Error('当前密码错误')
+
+    // 更新密码
+    const updated = Forum_User.updateById(user._id, {
+        password: k.security.md5(pwd)
+    } as any)
+    if (!updated) throw new Error('密码修改失败')
+
+    return
+}

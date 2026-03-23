@@ -1,6 +1,6 @@
 // @k-url /api/forum/auth/{action}
 
-import { login, logout, sendVerificationCode, verifyVerificationCode, register, resetPassword, getCurrentUser, getUserDetail, updateProfile } from "code/Services/auth";
+import { login, logout, sendVerificationCode, verifyVerificationCode, register, resetPassword, getCurrentUser, getUserDetail, updateProfile, changePassword } from "code/Services/auth";
 import { followUser, unfollowUser, getUserFollowersCount, getUserFollowingCount, isFollowing, getUserComments } from "code/Services/ForumUserService";
 import { successResponse, failResponse } from "code/Utils/ResponseUtils";
 
@@ -277,6 +277,25 @@ k.api.get('user-comments', () => {
     const limit = parseInt(k.request.get('limit') || '20', 10);
     const comments = getUserComments(userId, limit);
     return successResponse(comments);
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 修改密码
+ * 需登录，验证旧密码后修改
+ */
+k.api.post('change-password', (body: {
+  oldPassword?: string;
+  newPassword?: string;
+}) => {
+  try {
+    changePassword({
+      oldPassword: body.oldPassword ?? '',
+      newPassword: body.newPassword ?? ''
+    });
+    return successResponse(null, '密码修改成功');
   } catch (e: any) {
     return failResponse(e?.message || '服务器错误');
   }
