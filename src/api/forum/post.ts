@@ -6,6 +6,7 @@ import { ForumCollectionService } from 'code/Services/ForumCollectionService'
 import { Forum_Category } from 'code/Models/Forum_Category'
 import { Forum_Post } from 'code/Models/Forum_Post'
 import { Forum_User } from 'code/Models/Forum_User'
+import { Forum_Reply } from 'code/Models/Forum_Reply'
 import { successResponse, failResponse } from 'code/Utils/ResponseUtils'
 
 /**
@@ -238,6 +239,50 @@ k.api.get('seed', () => {
                         .map(idx => tags[idx]._id)
                     if (tagIds.length > 0) {
                         ForumTagService.addTagsToPost(id, tagIds)
+                    }
+                }
+
+                // 为部分帖子创建回复（用于测试已解决和点赞功能）
+                // 只有索引 0, 1, 3, 5 的帖子有回复
+                const replyConfig: Record<number, { replies: Array<{ authorIdx: number; content: string; likeCount: number; isAccepted?: boolean }> }> = {
+                    0: { replies: [
+                        { authorIdx: 1, content: '欢迎欢迎！', likeCount: 5, isAccepted: true }, // 第一条设为解决方案
+                        { authorIdx: 0, content: '希望这个论坛越办越好', likeCount: 3 }
+                    ]},
+                    1: { replies: [
+                        { authorIdx: 0, content: 'Actions 感觉很强大', likeCount: 8 },
+                        { authorIdx: 1, content: 'use() Hook 可以直接读取 promise，很方便', likeCount: 12, isAccepted: true }
+                    ]},
+                    3: { replies: [
+                        { authorIdx: 0, content: 'VSCode + ESLint + Prettier 是标配', likeCount: 6 },
+                        { authorIdx: 1, content: '推荐使用 WSL 开发，体验更好', likeCount: 10, isAccepted: true }
+                    ]},
+                    5: { replies: [
+                        { authorIdx: 0, content: 'Kooboo 的模板引擎很好用', likeCount: 4 }
+                    ]}
+                }
+
+                const replyData = replyConfig[i]
+                if (replyData) {
+                    for (const reply of replyData.replies) {
+                        const replyAuthor = reply.authorIdx === 0 ? user1 : user2
+                        if (!replyAuthor) continue
+
+                        const replyId = Forum_Reply.create({
+                            postId: id,
+                            authorId: replyAuthor._id,
+                            content: reply.content,
+                            likeCount: reply.likeCount,
+                            isAccepted: reply.isAccepted || false
+                        })
+
+                        // 如果是已接受的回复，更新帖子的 isSolved 状态
+                        if (replyId && reply.isAccepted) {
+                            Forum_Post.updateById(id, {
+                                isSolved: true,
+                                acceptedReplyId: replyId
+                            })
+                        }
                     }
                 }
             }
@@ -688,5 +733,73 @@ k.api.get('saved', () => {
         return successResponse(result)
     } catch (e: any) {
         return failResponse(e?.message || '获取收藏列表失败')
+    }
+})
+
+/**
+ * 标记回复为解决方案
+ */
+k.api.post('mark-solution', () => {
+    try {
+        const userId = ForumPostService.getCurrentUserId()
+        if (!userId) {
+            return failResponse('请先登录')
+        }
+
+        const bodyStr = k.request.body
+        let body: { postId?: string; replyId?: string }
+        try {
+            body = typeof bodyStr === 'string' ? JSON.parse(bodyStr) : bodyStr
+        } catch {
+            return failResponse('请求参数格式错误')
+        }
+
+        const { postId, replyId } = body
+
+        if (!postId) {
+            return failResponse('缺少帖子ID')
+        }
+        if (!replyId) {
+            return failResponse('缺少回复ID')
+        }
+
+        const result = ForumPostService.markSolution(postId, replyId)
+        return successResponse(result)
+    } catch (e: any) {
+        return failResponse(e?.message || '标记解决方案失败')
+    }
+})
+
+/**
+ * 取消标记解决方案
+ */
+k.api.post('unmark-solution', () => {
+    try {
+        const postId = k.request.get('postId')
+        if (!postId) {
+            return failResponse('缺少帖子ID')
+        }
+
+        const result = ForumPostService.unmarkSolution(postId)
+        return successResponse(result)
+    } catch (e: any) {
+        return failResponse(e?.message || '取消标记失败')
+    }
+})
+
+/**
+ * 获取用户的已解决帖子数量
+ */
+k.api.get('user-solved-count', () => {
+    try {
+        const userId = k.request.get('userId')
+        if (!userId) {
+            return failResponse('缺少用户ID')
+        }
+
+        const count = ForumPostService.getUserSolvedCount(userId)
+        return successResponse({ count })
+    } catch (e: any) {
+        return failResponse(e?.message || '获取已解决数量失败')
     }
 })

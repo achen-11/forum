@@ -43,6 +43,7 @@ export default function ProfilePage() {
   const [likesCount, setLikesCount] = useState(0)
   const [savedCount, setSavedCount] = useState(0)
   const [savedPosts, setSavedPosts] = useState<SavedPost[]>([])
+  const [solvedCount, setSolvedCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
 
   // Edit profile states
@@ -75,8 +76,9 @@ export default function ProfilePage() {
       postApi.getPostList(undefined, user._id),
       authApi.getUserComments(user._id),
       postApi.getSavedPosts(1, 1), // 获取收藏列表（仅需总数）
+      postApi.getUserSolvedCount(user._id), // 获取已解决帖子数
     ])
-      .then(([postsData, commentsData, savedData]) => {
+      .then(([postsData, commentsData, savedData, solvedCount]) => {
         if (!cancelled) {
           setMyPosts(postsData)
           setPostsCount(postsData.length)
@@ -87,6 +89,8 @@ export default function ProfilePage() {
           setLikesCount(totalLikes)
           // Set saved count from API
           setSavedCount(savedData.pagination.total)
+          // Set solved count from API
+          setSolvedCount(solvedCount)
         }
       })
       .finally(() => {
@@ -349,7 +353,7 @@ export default function ProfilePage() {
                     <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">获赞数</p>
                   </div>
                   <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-center">
-                    <p className="text-2xl font-black text-primary">{commentsCount > 0 ? Math.floor(commentsCount / 5) : 0}</p>
+                    <p className="text-2xl font-black text-primary">{solvedCount}</p>
                     <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">已解决</p>
                   </div>
                 </div>

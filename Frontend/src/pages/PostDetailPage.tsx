@@ -1,153 +1,24 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { postApi } from '@/api/post'
 import type { Post, Reply } from '@/types/post'
-import { ArrowLeft, Eye, MessageCircle, Clock, ArrowUpDown, Heart, Bookmark, Share2, ChevronRight, Users, BookOpen, Shield, Trash2, Edit } from 'lucide-react'
+import { ArrowLeft, Eye, MessageCircle, Clock, ArrowUpDown, Heart, Bookmark, Share2, ChevronRight, Users, BookOpen, Shield, Trash2, Edit, CheckCircle } from 'lucide-react'
 import { Hash } from 'lucide-react'
 import { Header } from '@/components/Header'
 import { ReplyDrawer } from '@/components/ReplyDrawer'
 import { PostFormDrawer } from '@/components/CreatePostDrawer'
+import { ReplyItem } from '@/components/ReplyItem'
 import { useAuthStore } from '@/stores/authStore'
 import { toast } from '@/lib/toast'
-
-// ==================== Reply Components ====================
-
-interface ReplyItemProps {
-  reply: Reply
-  rootReplyId: string  // 顶级回复的 _id，用于判断是否显示"回复 XXX"
-  onDelete: (replyId: string) => void
-  canManage: (authorId?: string) => boolean
-  onReply: (parentId: string, replyToName: string) => void
-}
-
-// 格式化时间
-const formatTime = (time: string) => {
-  const date = new Date(time)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-  if (minutes < 1) return '刚刚'
-  if (minutes < 60) return `${minutes}分钟前`
-  if (hours < 24) return `${hours}小时前`
-  if (days < 7) return `${days}天前`
-  return date.toLocaleDateString('zh-CN')
-}
-
-// 获取名字首字母
-const getInitials = (name?: string) => name?.slice(0, 2).toUpperCase() || '?'
-
-// 回复项组件
-const ReplyItem = ({ reply, rootReplyId, onDelete, canManage, onReply }: ReplyItemProps) => {
-  const isChildOfRoot = reply.parentId === rootReplyId  // 是否是顶级回复的直接子回复（二级回复）
-  const showReplyTo = !isChildOfRoot  // 3+级回复显示"回复 XXX"
-
-  return (
-    <div className="flex gap-3 p-4 bg-slate-50 rounded-lg">
-      {/* 头像 */}
-      {reply.author?._id ? (
-        <Link to={`/user/${reply.author._id}`} className="shrink-0">
-          <Avatar className="w-8 h-8 hover:opacity-80">
-            {reply.author?.avatar ? <AvatarImage src={reply.author.avatar} alt="" /> : null}
-            <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm">
-              {getInitials(reply.author?.displayName || reply.author?.userName)}
-            </AvatarFallback>
-          </Avatar>
-        </Link>
-      ) : (
-        <Avatar className="w-8 h-8 shrink-0">
-          {reply.author?.avatar ? <AvatarImage src={reply.author.avatar} alt="" /> : null}
-          <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm">
-            {getInitials(reply.author?.displayName || reply.author?.userName)}
-          </AvatarFallback>
-        </Avatar>
-      )}
-
-      <div className="flex-1 min-w-0">
-        {/* 用户名 + 时间 + 按钮 */}
-        <div className="flex items-center gap-2 mb-2 flex-wrap">
-          {reply.author?._id ? (
-            <Link
-              to={`/user/${reply.author._id}`}
-              className="font-medium text-slate-900 text-sm hover:underline flex items-center gap-1"
-            >
-              {reply.author?.displayName || reply.author?.userName || '未知用户'}
-              {reply.author?.role === 'admin' && (
-                <span className="px-1 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">管理员</span>
-              )}
-            </Link>
-          ) : (
-            <span className="font-medium text-slate-900 text-sm">
-              {reply.author?.displayName || reply.author?.userName || '未知用户'}
-            </span>
-          )}
-          <span className="text-xs text-slate-400">{formatTime(reply.createdAt)}</span>
-
-          {/* 按钮区域 */}
-          <div className="flex items-center gap-2 ml-auto">
-            {/* 3+级回复显示"回复 XXX" */}
-            {showReplyTo && (
-              <span className="text-xs text-slate-400">
-                回复 {reply.replyTo?.displayName || reply.replyTo?.userName}
-              </span>
-            )}
-            {/* 回复按钮 */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-slate-500 h-6 px-2 text-xs"
-              onClick={() => onReply(reply._id, reply.author?.displayName || reply.author?.userName || '用户')}
-            >
-              回复
-            </Button>
-            {/* 删除按钮 */}
-            {canManage(reply.author?._id) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-red-500 h-6 px-2 text-xs hover:text-red-600"
-                onClick={() => onDelete(reply._id)}
-              >
-                删除
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* 回复内容 */}
-        <div
-          className="text-slate-700 text-sm [&_p]:mb-1"
-          dangerouslySetInnerHTML={{ __html: reply.content }}
-        />
-
-        {/* 子回复列表 */}
-        {reply.children && reply.children.length > 0 && (
-          <div className="mt-3 ml-11 space-y-3 border-l-2 border-slate-200 pl-4">
-            {reply.children.map((child) => (
-              <ReplyItem
-                key={child._id}
-                reply={child}
-                rootReplyId={rootReplyId}
-                onDelete={onDelete}
-                canManage={canManage}
-                onReply={onReply}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user, isAuthenticated } = useAuthStore()
+  const acceptedReplyRef = useRef<HTMLDivElement>(null)
 
   const [post, setPost] = useState<Post | null>(null)
   const [replies, setReplies] = useState<Reply[]>([])
@@ -170,6 +41,10 @@ export default function PostDetailPage() {
   const [likeCount, setLikeCount] = useState(0)
   const [shareCount, setShareCount] = useState(0)
   const [isProcessing, setIsProcessing] = useState(false)
+
+  // 回复点赞状态（本地模拟）
+  const [likedReplies, setLikedReplies] = useState<Set<string>>(new Set())
+  const [replyLikeCounts, setReplyLikeCounts] = useState<Map<string, number>>(new Map())
 
   // 关注状态（本地模拟）
   const [isFollowing, setIsFollowing] = useState(false)
@@ -295,6 +170,69 @@ export default function PostDetailPage() {
   const canManageReply = (replyAuthorId?: string) => {
     if (!isAuthenticated || !user || !replyAuthorId) return false
     return user._id === replyAuthorId || user.role === 'admin'
+  }
+
+  // 是否可以标记解决方案（帖子作者或管理员）
+  const canMarkSolution = () => {
+    if (!isAuthenticated || !user || !post?.author) return false
+    return user._id === post.author._id || user.role === 'admin'
+  }
+
+  // 标记为解决方案
+  const handleMarkSolution = async (replyId: string) => {
+    if (!id || !post) return
+    try {
+      if (post.isSolved && post.acceptedReplyId === replyId) {
+        // 取消标记
+        await postApi.unmarkSolution(id)
+        setPost({ ...post, isSolved: false, acceptedReplyId: null })
+        toast.success('已取消标记')
+      } else {
+        // 标记为解决方案
+        await postApi.markSolution(id, replyId)
+        setPost({ ...post, isSolved: true, acceptedReplyId: replyId })
+        toast.success('已标记为解决方案')
+      }
+      // 刷新回复列表
+      const newReplies = await postApi.getReplyList(id, sortOrder)
+      setReplies(newReplies)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '操作失败')
+    }
+  }
+
+  // 点赞回复
+  const handleLikeReply = async (replyId: string) => {
+    try {
+      const result = await postApi.toggleLike('reply', replyId)
+      setLikedReplies(prev => {
+        const next = new Set(prev)
+        if (result.isLiked) {
+          next.add(replyId)
+        } else {
+          next.delete(replyId)
+        }
+        return next
+      })
+      setReplyLikeCounts(prev => {
+        const next = new Map(prev)
+        const current = next.get(replyId) || 0
+        next.set(replyId, result.isLiked ? current + 1 : Math.max(0, current - 1))
+        return next
+      })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '点赞失败')
+    }
+  }
+
+  // 滚动到已接受的回复
+  const scrollToAcceptedReply = () => {
+    if (post?.acceptedReplyId && acceptedReplyRef.current) {
+      const element = document.getElementById(`reply-${post.acceptedReplyId}`)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }
   }
 
   // 删除帖子
@@ -582,6 +520,20 @@ export default function PostDetailPage() {
                 </div>
               </div>
 
+              {/* 已解决横幅 */}
+              {post.isSolved && (
+                <div
+                  className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg cursor-pointer hover:bg-emerald-100 transition-colors"
+                  onClick={scrollToAcceptedReply}
+                >
+                  <div className="flex items-center gap-2 text-emerald-700">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="font-medium">此问题已被标记为解决方案</span>
+                    <span className="text-emerald-600 text-sm">（点击查看）</span>
+                  </div>
+                </div>
+              )}
+
               {/* 帖子内容 */}
               <div
                 className="prose prose-slate max-w-none"
@@ -637,14 +589,21 @@ export default function PostDetailPage() {
                   </p>
                 ) : (
                   replies.map((reply) => (
-                    <ReplyItem
-                      key={reply._id}
-                      reply={reply}
-                      rootReplyId={reply._id}
-                      onDelete={(id) => openDeleteReplyDialog(id)}
-                      canManage={canManageReply}
-                      onReply={handleReplyToReply}
-                    />
+                    <div ref={post.acceptedReplyId === reply._id ? acceptedReplyRef : undefined} key={reply._id}>
+                      <ReplyItem
+                        reply={reply}
+                        rootReplyId={reply._id}
+                        onDelete={(id) => openDeleteReplyDialog(id)}
+                        canManage={canManageReply}
+                        onReply={handleReplyToReply}
+                        isAccepted={post.acceptedReplyId === reply._id}
+                        canMarkSolution={canMarkSolution()}
+                        onMarkSolution={handleMarkSolution}
+                        onLikeReply={handleLikeReply}
+                        isLiked={likedReplies.has(reply._id)}
+                        replyLikeCount={replyLikeCounts.get(reply._id) ?? reply.likeCount ?? 0}
+                      />
+                    </div>
                   ))
                 )}
               </div>

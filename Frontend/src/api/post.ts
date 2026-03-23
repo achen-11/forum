@@ -200,4 +200,31 @@ export const postApi = {
     const data = await http.post<DeleteResponse>('/api/forum/post/reply/delete', { replyId })
     return data as unknown as DeleteResponse
   },
+
+  /**
+   * 标记回复为解决方案
+   */
+  markSolution: async (postId: string, replyId: string): Promise<{ success: boolean; message: string }> => {
+    const data = await http.post<{ success: boolean; message: string }>('/api/forum/post/mark-solution', {
+      postId,
+      replyId
+    })
+    return data as unknown as { success: boolean; message: string }
+  },
+
+  /**
+   * 取消标记解决方案
+   */
+  unmarkSolution: async (postId: string): Promise<{ success: boolean; message: string }> => {
+    const data = await http.post<{ success: boolean; message: string }>(`/api/forum/post/unmark-solution?postId=${encodeURIComponent(postId)}`, {})
+    return data as unknown as { success: boolean; message: string }
+  },
+
+  /**
+   * 获取用户的已解决帖子数
+   */
+  getUserSolvedCount: async (userId: string): Promise<number> => {
+    const data = await http.get<{ count: number }>(`/api/forum/post/user-solved-count?userId=${encodeURIComponent(userId)}`)
+    return (data as unknown as { count: number }).count
+  },
 }

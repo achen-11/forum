@@ -460,14 +460,27 @@ export class ForumPostService {
                         likeCount: Math.max(0, (post.likeCount || 1) - 1)
                     } as any)
                 }
+            } else if (targetType === 'reply') {
+                const reply = Forum_Reply.findById(targetId)
+                if (reply) {
+                    Forum_Reply.updateById(targetId, {
+                        likeCount: Math.max(0, (reply.likeCount || 1) - 1)
+                    } as any)
+                }
             }
-            // reply 也类似处理（如果需要）
 
             // 获取最新点赞数
-            const post = targetType === 'post' ? Forum_Post.findById(targetId) : null
+            let likeCount = 0
+            if (targetType === 'post') {
+                const post = Forum_Post.findById(targetId)
+                likeCount = post?.likeCount || 0
+            } else if (targetType === 'reply') {
+                const reply = Forum_Reply.findById(targetId)
+                likeCount = reply?.likeCount || 0
+            }
             return {
                 isLiked: false,
-                likeCount: post?.likeCount || 0,
+                likeCount,
                 message: '取消点赞成功'
             }
         } else {
@@ -486,14 +499,27 @@ export class ForumPostService {
                         likeCount: (post.likeCount || 0) + 1
                     } as any)
                 }
+            } else if (targetType === 'reply') {
+                const reply = Forum_Reply.findById(targetId)
+                if (reply) {
+                    Forum_Reply.updateById(targetId, {
+                        likeCount: (reply.likeCount || 0) + 1
+                    } as any)
+                }
             }
-            // reply 也类似处理（如果需要）
 
             // 获取最新点赞数
-            const post = targetType === 'post' ? Forum_Post.findById(targetId) : null
+            let likeCount = 0
+            if (targetType === 'post') {
+                const post = Forum_Post.findById(targetId)
+                likeCount = post?.likeCount || 0
+            } else if (targetType === 'reply') {
+                const reply = Forum_Reply.findById(targetId)
+                likeCount = reply?.likeCount || 0
+            }
             return {
                 isLiked: true,
-                likeCount: post?.likeCount || 0,
+                likeCount,
                 message: '点赞成功'
             }
         }
@@ -815,5 +841,107 @@ export class ForumPostService {
                 })
             }
         })
+    }
+
+    /**
+     * 标记回复为解决方案
+     * @param postId 帖子 ID
+     * @param replyId 回复 ID
+     * @returns 操作结果
+     */
+    static markSolution(postId: string, replyId: string) {
+        const user = getCurrentUser()
+        if (!user) {
+            throw new Error('请先登录')
+        }
+
+        const post = Forum_Post.findById(postId)
+        if (!post) {
+            throw new Error('帖子不存在')
+        }
+
+        // 权限检查：仅帖主和管理员可以标记
+        if (!this.canManage(post.authorId)) {
+            throw new Error('无权限标记解决方案')
+        }
+
+        const reply = Forum_Reply.findById(replyId)
+        if (!reply) {
+            throw new Error('回复不存在')
+        }
+
+        // 检查回复是否属于该帖子
+        if (reply.postId !== postId) {
+            throw new Error('回复不属于该帖子')
+        }
+
+        // 如果之前有其他解决方案，先取消
+        if (post.acceptedReplyId) {
+            Forum_Reply.updateById(post.acceptedReplyId, {
+                isAccepted: false
+            } as any)
+        }
+
+        // 标记新的解决方案
+        Forum_Post.updateById(postId, {
+            isSolved: true,
+            acceptedReplyId: replyId
+        } as any)
+
+        Forum_Reply.updateById(replyId, {
+            isAccepted: true
+        } as any)
+
+        return { success: true, message: '已标记为解决方案' }
+    }
+
+    /**
+     * 取消标记解决方案
+     * @param postId 帖子 ID
+     * @returns 操作结果
+     */
+    static unmarkSolution(postId: string) {
+        const user = getCurrentUser()
+        if (!user) {
+            throw new Error('请先登录')
+        }
+
+        const post = Forum_Post.findById(postId)
+        if (!post) {
+            throw new Error('帖子不存在')
+        }
+
+        // 权限检查：仅帖主和管理员可以取消标记
+        if (!this.canManage(post.authorId)) {
+            throw new Error('无权限取消标记')
+        }
+
+        // 取消原解决方案的标记
+        if (post.acceptedReplyId) {
+            Forum_Reply.updateById(post.acceptedReplyId, {
+                isAccepted: false
+            } as any)
+        }
+
+        // 清除帖子的解决方案标记
+        Forum_Post.updateById(postId, {
+            isSolved: false,
+            acceptedReplyId: null
+        } as any)
+
+        return { success: true, message: '已取消标记' }
+    }
+
+    /**
+     * 获取用户的已解决帖子数量
+     * @param userId 用户 ID
+     * @returns 已解决帖子数量
+     */
+    static getUserSolvedCount(userId: string): number {
+        const posts = Forum_Post.findAll({
+            authorId: userId,
+            isSolved: true
+        })
+        return posts.length
     }
 }

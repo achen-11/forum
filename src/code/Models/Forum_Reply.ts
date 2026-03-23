@@ -28,6 +28,16 @@ const Forum_Reply = ksql.define(
         content: {
             type: DataTypes.String,
             required: true
+        },
+        likeCount: {
+            type: DataTypes.Number,
+            default: 0,
+            comment: '点赞数'
+        },
+        isAccepted: {
+            type: DataTypes.Boolean,
+            default: false,
+            comment: '是否被接受为解决方案'
         }
     },
     {

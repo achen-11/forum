@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { MessageCircle, Heart, Pin, Bookmark } from 'lucide-react'
+import { MessageCircle, Heart, Pin, Bookmark, CheckCircle } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import type { Post } from '@/types/post'
 
@@ -46,7 +46,7 @@ export function PostItem({ post, onClick }: PostItemProps) {
 
         {/* 右侧：上下布局 */}
         <div className="flex-1 min-w-0">
-          {/* 第一行：作者信息 · 发布时间 · 置顶 */}
+          {/* 第一行：作者信息 · 发布时间 · 置顶/已解决 */}
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2 text-sm text-slate-500">
               {post.author?._id ? (
@@ -65,12 +65,20 @@ export function PostItem({ post, onClick }: PostItemProps) {
               <span>·</span>
               <span>{formatDate(post.createdAt)}</span>
             </div>
-            {post.isPinned && (
-              <div className="flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                <Pin className="w-3 h-3" />
-                置顶
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {post.isSolved && (
+                <div className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
+                  <CheckCircle className="w-3 h-3" />
+                  已解决
+                </div>
+              )}
+              {post.isPinned && (
+                <div className="flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                  <Pin className="w-3 h-3" />
+                  置顶
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 标题 */}

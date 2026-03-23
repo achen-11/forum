@@ -54,6 +54,17 @@ const Forum_Post = ksql.define(
         editedAt: {
             type: DataTypes.Timestamp,
             comment: '编辑时间'
+        },
+        isSolved: {
+            type: DataTypes.Boolean,
+            default: false,
+            index: true,
+            comment: '是否已解决'
+        },
+        acceptedReplyId: {
+            type: DataTypes.String,
+            default: null,
+            comment: '被接受的回复 ID'
         }
     },
     {

@@ -26,6 +26,8 @@ export interface Post {
   isEssence?: boolean
   isEdited?: boolean
   editedAt?: number
+  isSolved?: boolean  // 是否已解决
+  acceptedReplyId?: string | null  // 被接受的回复 ID
   createdAt: string
   updatedAt: string
 }
@@ -57,6 +59,8 @@ export interface Reply {
   authorId: string
   author?: UserInfo
   content: string
+  likeCount?: number  // 点赞数
+  isAccepted?: boolean  // 是否被接受为解决方案
   createdAt: string
   updatedAt: string
   // 嵌套回复相关
