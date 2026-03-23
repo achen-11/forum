@@ -485,3 +485,35 @@ Created and documented a new OpenClaw forum API skill with login-session auth st
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: 已解决帖子功能
+
+**Date**: 2026-03-23
+**Task**: 已解决帖子功能
+
+### Summary
+
+实现了已解决帖子功能，包括后端 API（mark-solution、unmark-solution、user-solved-count）和前端展示（PostItem 徽章、ReplyItem 组件、PostDetailPage 横幅）
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d2b1923` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
