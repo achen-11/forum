@@ -676,3 +676,17 @@ k.api.post('share', () => {
         return failResponse(e?.message || '分享失败')
     }
 })
+
+/**
+ * 获取当前用户的收藏列表
+ */
+k.api.get('saved', () => {
+    try {
+        const page = parseInt(k.request.get('page') || '1')
+        const pageSize = parseInt(k.request.get('pageSize') || '10')
+        const result = ForumCollectionService.getUserCollections(page, pageSize)
+        return successResponse(result)
+    } catch (e: any) {
+        return failResponse(e?.message || '获取收藏列表失败')
+    }
+})

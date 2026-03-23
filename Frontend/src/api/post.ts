@@ -1,5 +1,5 @@
 import { http } from '@/lib/request'
-import type { Category, Post, Reply, Tag, CreatePostParams, CreateReplyParams, SearchResponse, SearchPagination, EditPostParams, DeleteResponse } from '@/types/post'
+import type { Category, Post, Reply, Tag, CreatePostParams, CreateReplyParams, SearchResponse, SearchPagination, EditPostParams, DeleteResponse, SavedPostsResponse } from '@/types/post'
 
 export const postApi = {
   /**
@@ -167,6 +167,14 @@ export const postApi = {
   sharePost: async (postId: string): Promise<{ shareCount: number; message: string }> => {
     const data = await http.post<{ shareCount: number; message: string }>(`/api/forum/post/share?postId=${encodeURIComponent(postId)}`, {})
     return data as unknown as { shareCount: number; message: string }
+  },
+
+  /**
+   * 获取当前用户的收藏列表
+   */
+  getSavedPosts: async (page: number = 1, pageSize: number = 10): Promise<SavedPostsResponse> => {
+    const data = await http.get<SavedPostsResponse>(`/api/forum/post/saved?page=${page}&pageSize=${pageSize}`)
+    return data as unknown as SavedPostsResponse
   },
 
   /**

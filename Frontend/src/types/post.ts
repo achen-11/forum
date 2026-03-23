@@ -157,3 +157,21 @@ export interface DeleteResponse {
   success: boolean
   message: string
 }
+
+// 收藏帖子项（简化版 Post）
+export interface SavedPost {
+  _id: string
+  title: string
+  summary?: string
+  viewCount: number
+  replyCount: number
+  likeCount: number
+  createdAt: number
+  collectedAt: number
+}
+
+// 收藏帖子响应
+export interface SavedPostsResponse {
+  list: SavedPost[]
+  pagination: SearchPagination
+}
