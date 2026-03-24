@@ -48,7 +48,7 @@ Gym-reservation/           # Kooboo 项目根目录
 
 | 规范文件 | 说明 | 状态 |
 |----------|------|------|
-| [设计指南](./design-guide.md) | 运动活力风格设计规范 | 必读 |
+| [设计指南](./design-guide.md) | 运动活力风格设计规范 + 图标规范 | 必读 |
 | [目录结构](./directory-structure.md) | 项目目录组织规范 | 待完善 |
 | [组件规范](./component-guidelines.md) | Vue 组件开发规范 | 待完善 |
 | [Hook 规范](./hook-guidelines.md) | 自定义 Hook 规范 | 待完善 |
@@ -63,7 +63,7 @@ Gym-reservation/           # Kooboo 项目根目录
 | 约束 | 说明 |
 |------|------|
 | Vue Router | 必须使用 **hash 模式**（`createWebHashHistory()`） |
-| 构建命令 | 使用 `npm run build` 或 `build.bash` |
+| 构建命令 | 必须在 **项目根目录** 执行 `pnpm build` |
 | 产物位置 | 构建产物自动复制到 `src/page`、`src/css`、`src/js` |
 | 首页声明 | `src/page/index.html` 首行必须有 `<!-- @k-url / -->` |
 

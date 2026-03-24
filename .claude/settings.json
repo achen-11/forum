@@ -7,10 +7,32 @@
       "Bash(* --version)",
       "Bash(* --help *)",
       "Bash(curl *)",
-      "Bash(python3 ./.trellis/scripts/add_session.py --title \"Profile 页面优化 & 登录功能完善\" --commit \"d9275bc,baf961f,7bd188c\" --summary \"本次会话完成了以下功能：1\\) 修复头像上传预览不更新问题；2\\) 移除账户安全中的两步验证和登录会话功能；3\\) 实现修改密码功能；4\\) 我的帖子和收藏功能添加分页支持；5\\) 帖子详情页隐藏作者自己的关注按钮；6\\) 登录页添加记住我功能\")"
+      "Bash(python3 ./.trellis/scripts/add_session.py --title \"Profile 页面优化 & 登录功能完善\" --commit \"d9275bc,baf961f,7bd188c\" --summary \"本次会话完成了以下功能：1\\) 修复头像上传预览不更新问题；2\\) 移除账户安全中的两步验证和登录会话功能；3\\) 实现修改密码功能；4\\) 我的帖子和收藏功能添加分页支持；5\\) 帖子详情页隐藏作者自己的关注按钮；6\\) 登录页添加记住我功能\")",
+      "Bash(python3 ./.trellis/scripts/task.py create \"brainstorm: 论坛通知模块\" --slug notification-system)",
+      "Read(//Users/achen/Priv/task-banner/src/code/Services/**)",
+      "Read(//Users/achen/Priv/Yardi/Kooboo-Template/skill/kooboo-development/references/**)",
+      "Read(//Users/achen/Priv/task-banner/src/code/Utils/**)",
+      "Read(//Users/achen/Priv/task-banner/src/code/Models/**)",
+      "Read(//Users/achen/Priv/task-banner/src/**)",
+      "Bash(python3 ./.trellis/scripts/task.py init-context .trellis/tasks/03-24-notification-system fullstack)",
+      "Bash(python3 ./.trellis/scripts/task.py add-context .trellis/tasks/03-24-notification-system implement \".trellis/spec/backend/websocket.md\" \"WebSocket 实时通信核心规范\")",
+      "Bash(python3 ./.trellis/scripts/task.py add-context .trellis/tasks/03-24-notification-system implement \".trellis/spec/backend/database.md\" \"数据库操作规范\")",
+      "Bash(python3 ./.trellis/scripts/task.py add-context .trellis/tasks/03-24-notification-system implement \".trellis/spec/backend/logging-guidelines.md\" \"日志规范 - 必须使用 k.logger\")",
+      "Bash(python3 ./.trellis/scripts/task.py add-context .trellis/tasks/03-24-notification-system implement \".trellis/spec/backend/api-core.md\" \"API 响应格式\")",
+      "Bash(python3 ./.trellis/scripts/task.py add-context .trellis/tasks/03-24-notification-system implement \".trellis/spec/frontend/index.md\" \"前端开发规范\")",
+      "Bash(python3 ./.trellis/scripts/task.py add-context .trellis/tasks/03-24-notification-system check \".trellis/spec/backend/websocket.md\" \"WebSocket 规范检查\")",
+      "Bash(python3 ./.trellis/scripts/task.py add-context .trellis/tasks/03-24-notification-system check \".trellis/spec/backend/database.md\" \"数据库操作检查\")",
+      "Bash(python3 ./.trellis/scripts/task.py add-context .trellis/tasks/03-24-notification-system check \".trellis/spec/backend/logging-guidelines.md\" \"日志规范检查\")",
+      "Bash(python3 ./.trellis/scripts/task.py start .trellis/tasks/03-24-notification-system)",
+      "Bash(python3 ./.trellis/scripts/task.py finish)",
+      "Bash(ls -la *.json)",
+      "Bash(pnpm build:*)"
     ],
     "deny": [
       "Bash(git push *)"
+    ],
+    "additionalDirectories": [
+      "/Users/achen/Priv/task-banner/src/code/Utils"
     ]
   },
   "hooks": {

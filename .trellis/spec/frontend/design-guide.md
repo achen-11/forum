@@ -435,7 +435,93 @@
 - [ ] 字体是否有层次（标题加粗）
 - [ ] 是否有页面加载动画
 - [ ] 卡片是否有阴影或边框高亮
-- [ ] 图标是否使用 Emoji 或 SVG
+- [ ] 图标是否使用 lucide-react（禁止使用 Emoji）
+
+---
+
+## 图标规范
+
+本项目使用 **lucide-react** 作为图标库，禁止使用 Emoji 作为图标。
+
+### 图标引入
+
+```typescript
+import { Bell, MessageCircle, Heart, UserPlus, Award, Check } from 'lucide-react'
+```
+
+### 常用图标映射
+
+| 场景 | 图标 | 导入 |
+|------|------|------|
+| 通知 | Bell | `import { Bell } from 'lucide-react'` |
+| 评论/回复 | MessageCircle | `import { MessageCircle } from 'lucide-react'` |
+| 点赞 | Heart | `import { Heart } from 'lucide-react'` |
+| 关注 | UserPlus | `import { UserPlus } from 'lucide-react'` |
+| 最佳答案 | Award | `import { Award } from 'lucide-react'` |
+| 已读/完成 | CheckCheck | `import { CheckCheck } from 'lucide-react'` |
+| 搜索 | Search | `import { Search } from 'lucide-react'` |
+| 菜单 | Menu | `import { Menu } from 'lucide-react'` |
+| 关闭 | X | `import { X } from 'lucide-react'` |
+| 加载 | Loader2 | `import { Loader2 } from 'lucide-react'` |
+| 成功 | CheckCircle | `import { CheckCircle } from 'lucide-react'` |
+| 错误 | XCircle | `import { XCircle } from 'lucide-react'` |
+| 警告 | AlertCircle | `import { AlertCircle } from 'lucide-react'` |
+| 首页 | Home | `import { Home } from 'lucide-react'` |
+| 用户 | User | `import { User } from 'lucide-react'` |
+| 设置 | Settings | `import { Settings } from 'lucide-react'` |
+
+### 图标使用方式
+
+```tsx
+// 基础用法
+<Icon className="w-5 h-5" />
+
+// 带颜色
+<Heart className="w-5 h-5 text-red-500" />
+
+// 带点击事件
+<button onClick={handleClick}>
+  <Bell className="w-5 h-5" />
+</button>
+```
+
+### 图标大小规范
+
+| 场景 | 尺寸 |
+|------|------|
+| Header/Navigation | `w-5 h-5` (20px) |
+| 按钮内图标 | `w-4 h-4` (16px) |
+| 卡片图标 | `w-6 h-6` (24px) |
+| 大图标展示 | `w-8 h-8` (32px) |
+
+### 通知图标示例
+
+```tsx
+const getNotificationIcon = (type: NotificationItem['type']) => {
+  const iconClass = 'w-5 h-5 text-slate-500'
+  switch (type) {
+    case 'reply':
+      return <MessageCircle className={iconClass} />
+    case 'like_post':
+    case 'like_reply':
+      return <Heart className={`${iconClass} text-red-400`} />
+    case 'follow':
+      return <UserPlus className={iconClass} />
+    case 'best_answer':
+      return <Award className={`${iconClass} text-amber-500`} />
+    case 'system':
+      return <Bell className={iconClass} />
+    default:
+      return <Bell className={iconClass} />
+  }
+}
+```
+
+### 禁止事项
+
+- ❌ 禁止使用 Emoji 作为图标（如 🔔、💬、❤️）
+- ❌ 禁止混用多个图标库
+- ❌ 禁止使用超过 24px 的图标在列表项中
 
 ---
 
