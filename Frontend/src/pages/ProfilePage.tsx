@@ -76,6 +76,8 @@ export default function ProfilePage() {
 
   // Saved posts state
   const [savedLoading, setSavedLoading] = useState(false)
+  const [savedPage, setSavedPage] = useState(1)
+  const [savedTotalPages, setSavedTotalPages] = useState(1)
 
   // Load user data
   useEffect(() => {
@@ -127,11 +129,13 @@ export default function ProfilePage() {
     if (activeNav !== 'saved') return
     let cancelled = false
     setSavedLoading(true)
-    postApi.getSavedPosts(1, 50)
+    setSavedPage(1)
+    postApi.getSavedPosts(1, PAGE_SIZE)
       .then((data) => {
         if (!cancelled) {
           setSavedPosts(data.list)
           setSavedCount(data.pagination.total)
+          setSavedTotalPages(data.pagination.totalPages)
         }
       })
       .catch(() => {
@@ -201,6 +205,23 @@ export default function ProfilePage() {
       toast.error('加载失败')
     } finally {
       setPostsLoading(false)
+    }
+  }
+
+  // Handle load more saved posts
+  const handleLoadMoreSaved = async () => {
+    if (savedLoading) return
+    const nextPage = savedPage + 1
+    setSavedLoading(true)
+    try {
+      const data = await postApi.getSavedPosts(nextPage, PAGE_SIZE)
+      setSavedPosts(prev => [...prev, ...data.list])
+      setSavedPage(nextPage)
+      setSavedTotalPages(data.pagination.totalPages)
+    } catch (err) {
+      toast.error('加载失败')
+    } finally {
+      setSavedLoading(false)
     }
   }
 
@@ -482,6 +503,19 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   ))}
+                  {savedPage < savedTotalPages && (
+                    <div className="flex justify-center pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={handleLoadMoreSaved}
+                        disabled={savedLoading}
+                        className="gap-2"
+                      >
+                        {savedLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                        加载更多
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

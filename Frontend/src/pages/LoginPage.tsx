@@ -26,6 +26,7 @@ export default function LoginPage() {
   const [codeSending, setCodeSending] = useState(false)
   const [codeCountdown, setCodeCountdown] = useState(0)
   const [resetSuccess, setResetSuccess] = useState(false)
+  const [isRemember, setIsRemember] = useState(false)
 
   const isPhoneOrEmail = accountType === 'phone' || accountType === 'email'
 
@@ -68,6 +69,7 @@ export default function LoginPage() {
         password: loginMode === 'password' ? password : undefined,
         verificationCode: loginMode === 'code' ? code : undefined,
         loginMode,
+        isRemember,
       })
       if (success) {
         navigate('/')
@@ -506,9 +508,24 @@ export default function LoginPage() {
                   <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-md">{error}</p>
                 )}
 
+                {/* 记住我 - 仅登录时显示 */}
+                {pageMode === 'login' && (
+                  <div className="flex items-center">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isRemember}
+                        onChange={(e) => setIsRemember(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-slate-600">记住我</span>
+                    </label>
+                  </div>
+                )}
+
                 {/* 提交按钮 */}
                 <Button type="submit" className="w-full h-11" disabled={isLoading}>
-                  {isLoading 
+                  {isLoading
                     ? (pageMode === 'login' ? '登录中...' : pageMode === 'register' ? '注册中...' : '处理中...')
                     : (pageMode === 'login' ? '登录' : pageMode === 'register' ? '注册' : '重置密码')
                   }

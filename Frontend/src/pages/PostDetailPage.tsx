@@ -651,12 +651,14 @@ export default function PostDetailPage() {
                 <div className="text-sm text-slate-500 mb-3">
                   社区成员
                 </div>
-                <Button
-                  onClick={handleFollow}
-                  className={`w-full ${isFollowing ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-indigo-600 hover:bg-indigo-700'}`}
-                >
-                  {isFollowing ? '已关注' : '关注'}
-                </Button>
+                {user?._id !== post.author?._id && (
+                  <Button
+                    onClick={handleFollow}
+                    className={`w-full ${isFollowing ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                  >
+                    {isFollowing ? '已关注' : '关注'}
+                  </Button>
+                )}
               </div>
             </div>
 
