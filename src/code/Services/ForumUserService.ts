@@ -7,6 +7,7 @@ import { Forum_Follow } from 'code/Models/Forum_Follow'
 import { Forum_Reply } from 'code/Models/Forum_Reply'
 import { Forum_Post } from 'code/Models/Forum_Post'
 import { validateAuthToken, getCurrentUser } from 'code/Services/auth'
+import { createFollowNotification } from 'code/Services/NotificationService'
 
 /**
  * 获取当前登录用户 ID（优先从 Authorization header 获取，支持 cookie 回退）
@@ -52,6 +53,15 @@ export function followUser(followingId: string) {
         followerId: currentUserId,
         followingId
     })
+
+    // 发送关注通知
+    try {
+        const currentUser = Forum_User.findById(currentUserId) as any
+        const currentUserName = currentUser?.displayName || currentUser?.userName || '某用户'
+        createFollowNotification(followingId, currentUserId, currentUserName)
+    } catch (err) {
+        k.logger.error('ForumUserService', `Failed to create follow notification: ${err}`)
+    }
 
     return { success: true, message: '关注成功' }
 }

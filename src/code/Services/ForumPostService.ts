@@ -5,6 +5,7 @@ import { Forum_Reply } from 'code/Models/Forum_Reply'
 import { Forum_Like } from 'code/Models/Forum_Like'
 import { Forum_Post_Tag } from 'code/Models/Forum_Post_Tag'
 import { getCurrentUser } from 'code/Services/auth'
+import { createReplyNotification, createLikePostNotification, createLikeReplyNotification, createBestAnswerNotification } from 'code/Services/NotificationService'
 
 export class ForumPostService {
     /**
@@ -274,6 +275,32 @@ export class ForumPostService {
             Forum_Post.updateById(postId, {
                 replyCount: (post.replyCount || 0) + 1
             } as any)
+
+            // 发送回复通知（给帖子作者，但不包括自己回复自己的情况）
+            if (post.authorId && post.authorId !== authorId) {
+                try {
+                    const author = Forum_User.findById(authorId)
+                    const authorName = (author as any)?.displayName || (author as any)?.userName || '某用户'
+                    createReplyNotification(postId, post.authorId, authorId, authorName)
+                } catch (err) {
+                    k.logger.error('ForumPostService', `Failed to create reply notification: ${err}`)
+                }
+            }
+        }
+
+        // 如果是回复的回复（嵌套回复），通知被回复者
+        if (parentId) {
+            const parentReply = Forum_Reply.findById(parentId)
+            if (parentReply && parentReply.authorId && parentReply.authorId !== authorId) {
+                try {
+                    const author = Forum_User.findById(authorId)
+                    const authorName = (author as any)?.displayName || (author as any)?.userName || '某用户'
+                    // 嵌套回复通知：发给被回复的人
+                    createReplyNotification(postId, parentReply.authorId, authorId, authorName)
+                } catch (err) {
+                    k.logger.error('ForumPostService', `Failed to create nested reply notification: ${err}`)
+                }
+            }
         }
 
         // 返回带作者信息的评论
@@ -543,6 +570,10 @@ export class ForumPostService {
                 targetId
             })
 
+            // 获取当前用户信息（用于发送通知）
+            const currentUser = Forum_User.findById(userId) as any
+            const likerName = currentUser?.displayName || currentUser?.userName || '某用户'
+
             // 更新目标点赞数
             if (targetType === 'post') {
                 const post = Forum_Post.findById(targetId)
@@ -550,6 +581,14 @@ export class ForumPostService {
                     Forum_Post.updateById(targetId, {
                         likeCount: (post.likeCount || 0) + 1
                     } as any)
+                    // 发送帖子被点赞通知（不包括自己点赞自己）
+                    if (post.authorId && post.authorId !== userId) {
+                        try {
+                            createLikePostNotification(targetId, post.authorId, userId, likerName)
+                        } catch (err) {
+                            k.logger.error('ForumPostService', `Failed to create like post notification: ${err}`)
+                        }
+                    }
                 }
             } else if (targetType === 'reply') {
                 const reply = Forum_Reply.findById(targetId)
@@ -557,6 +596,14 @@ export class ForumPostService {
                     Forum_Reply.updateById(targetId, {
                         likeCount: (reply.likeCount || 0) + 1
                     } as any)
+                    // 发送评论被点赞通知（不包括自己点赞自己）
+                    if (reply.authorId && reply.authorId !== userId) {
+                        try {
+                            createLikeReplyNotification(targetId, reply.authorId, userId, likerName, reply.postId)
+                        } catch (err) {
+                            k.logger.error('ForumPostService', `Failed to create like reply notification: ${err}`)
+                        }
+                    }
                 }
             }
 
@@ -833,6 +880,7 @@ export class ForumPostService {
      * @param sortOrder 排序方式：ASC（正序）/ DESC（倒序）
      */
     static getNestedReplyList(postId: string, sortOrder: 'ASC' | 'DESC' = 'DESC') {
+        const currentUserId = this.getCurrentUserId()
         const replies = Forum_Reply.findAll({ postId }, {
             order: [{ prop: 'createdAt', order: sortOrder }]
         })
@@ -850,6 +898,11 @@ export class ForumPostService {
                 parentReply = Forum_Reply.findById(reply.parentId)
             }
 
+            // 检查当前用户是否点赞过这条回复
+            const isLikedByCurrentUser = currentUserId
+                ? !!Forum_Like.findOne({ userId: currentUserId, targetType: 'reply', targetId: reply._id })
+                : false
+
             return {
                 ...reply,
                 author: author ? {
@@ -862,7 +915,8 @@ export class ForumPostService {
                 parentReply: parentReply ? {
                     _id: parentReply._id,
                     authorId: parentReply.authorId
-                } : null
+                } : null,
+                isLikedByCurrentUser
             }
         })
 
@@ -943,6 +997,17 @@ export class ForumPostService {
         Forum_Reply.updateById(replyId, {
             isAccepted: true
         } as any)
+
+        // 发送最佳答案通知（通知回复作者，但不包括自己采纳自己的回复）
+        if (reply.authorId && reply.authorId !== user._id) {
+            try {
+                const replyAuthor = Forum_User.findById(reply.authorId) as any
+                const replyAuthorName = replyAuthor?.displayName || replyAuthor?.userName || '某用户'
+                createBestAnswerNotification(postId, user._id, reply.authorId, replyAuthorName)
+            } catch (err) {
+                k.logger.error('ForumPostService', `Failed to create best answer notification: ${err}`)
+            }
+        }
 
         return { success: true, message: '已标记为解决方案' }
     }

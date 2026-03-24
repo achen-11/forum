@@ -60,6 +60,7 @@ export interface Reply {
   author?: UserInfo
   content: string
   likeCount?: number  // 点赞数
+  isLikedByCurrentUser?: boolean  // 当前用户是否点赞过
   isAccepted?: boolean  // 是否被接受为解决方案
   createdAt: string
   updatedAt: string

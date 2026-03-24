@@ -13,10 +13,11 @@ export function successResponse(data?: any, msg?: string) {
  * 异常响应
  */
 export function failResponse(msg?: string, code?: number, data?: any) {
-    k.response.json({
+    const response = {
         code: code || 400,
         data,
         message: msg || 'fail'
-    })
-    return k.api.httpCode(code || 400)
+    }
+    k.response.json(response)
+    return response
 }

@@ -16,6 +16,9 @@ interface ReplyItemProps {
   onLikeReply: (replyId: string) => void
   isLiked: boolean
   replyLikeCount: number
+  // 可选：用于嵌套回复的状态查询
+  likedReplies?: Set<string>
+  replyLikeCounts?: Map<string, number>
 }
 
 // 格式化时间
@@ -48,6 +51,8 @@ export function ReplyItem({
   onLikeReply,
   isLiked,
   replyLikeCount,
+  likedReplies,
+  replyLikeCounts,
 }: ReplyItemProps) {
   const isChildOfRoot = reply.parentId === rootReplyId
   const showReplyTo = reply._id !== rootReplyId && !isChildOfRoot
@@ -174,9 +179,11 @@ export function ReplyItem({
                 isAccepted={false}
                 canMarkSolution={false}
                 onMarkSolution={() => {}}
-                onLikeReply={() => {}}
-                isLiked={false}
-                replyLikeCount={0}
+                onLikeReply={onLikeReply}
+                isLiked={likedReplies?.has(child._id) ?? child.isLikedByCurrentUser ?? false}
+                replyLikeCount={replyLikeCounts?.get(child._id) ?? child.likeCount ?? 0}
+                likedReplies={likedReplies}
+                replyLikeCounts={replyLikeCounts}
               />
             ))}
           </div>

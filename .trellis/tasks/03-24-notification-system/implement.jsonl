@@ -1,0 +1,7 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/backend/websocket.md", "reason": "WebSocket 实时通信核心规范"}
+{"file": ".trellis/spec/backend/database.md", "reason": "数据库操作规范"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "日志规范 - 必须使用 k.logger"}
+{"file": ".trellis/spec/backend/api-core.md", "reason": "API 响应格式"}

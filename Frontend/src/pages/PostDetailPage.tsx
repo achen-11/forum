@@ -42,8 +42,9 @@ export default function PostDetailPage() {
   const [shareCount, setShareCount] = useState(0)
   const [isProcessing, setIsProcessing] = useState(false)
 
-  // 回复点赞状态（本地模拟）
+  // 回复点赞状态本地缓存（用于即时更新 UI）
   const [likedReplies, setLikedReplies] = useState<Set<string>>(new Set())
+  // 回复点赞数本地缓存（用于乐观更新）
   const [replyLikeCounts, setReplyLikeCounts] = useState<Map<string, number>>(new Map())
 
   // 关注状态（本地模拟）
@@ -75,6 +76,23 @@ export default function PostDetailPage() {
         setIsCollected(statusData.isCollected)
         setLikeCount(statusData.likeCount)
         setShareCount(statusData.shareCount)
+        // 初始化回复点赞状态
+        const initialLikedReplies = new Set<string>()
+        const initialReplyLikeCounts = new Map<string, number>()
+        const collectReplyData = (replyList: Reply[]) => {
+          for (const reply of replyList) {
+            if (reply.isLikedByCurrentUser) {
+              initialLikedReplies.add(reply._id)
+            }
+            initialReplyLikeCounts.set(reply._id, reply.likeCount || 0)
+            if (reply.children && reply.children.length > 0) {
+              collectReplyData(reply.children)
+            }
+          }
+        }
+        collectReplyData(repliesData)
+        setLikedReplies(initialLikedReplies)
+        setReplyLikeCounts(initialReplyLikeCounts)
       } catch (err) {
         setError(err instanceof Error ? err.message : '加载失败')
       } finally {
@@ -205,6 +223,7 @@ export default function PostDetailPage() {
   const handleLikeReply = async (replyId: string) => {
     try {
       const result = await postApi.toggleLike('reply', replyId)
+      // 更新点赞状态
       setLikedReplies(prev => {
         const next = new Set(prev)
         if (result.isLiked) {
@@ -214,11 +233,27 @@ export default function PostDetailPage() {
         }
         return next
       })
+      // 更新点赞数（从 replyLikeCounts Map 读取当前值）
       setReplyLikeCounts(prev => {
         const next = new Map(prev)
-        const current = next.get(replyId) || 0
-        next.set(replyId, result.isLiked ? current + 1 : Math.max(0, current - 1))
+        const currentLikeCount = next.get(replyId) || 0
+        next.set(replyId, result.isLiked ? currentLikeCount + 1 : Math.max(0, currentLikeCount - 1))
         return next
+      })
+      // 更新 replies 数组中对应 reply 的 isLikedByCurrentUser 字段
+      setReplies(prevReplies => {
+        const updateReply = (replyList: Reply[]): Reply[] => {
+          return replyList.map(reply => {
+            if (reply._id === replyId) {
+              return { ...reply, isLikedByCurrentUser: result.isLiked }
+            }
+            if (reply.children && reply.children.length > 0) {
+              return { ...reply, children: updateReply(reply.children) }
+            }
+            return reply
+          })
+        }
+        return updateReply(prevReplies)
       })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '点赞失败')
@@ -600,8 +635,10 @@ export default function PostDetailPage() {
                         canMarkSolution={canMarkSolution()}
                         onMarkSolution={handleMarkSolution}
                         onLikeReply={handleLikeReply}
-                        isLiked={likedReplies.has(reply._id)}
+                        isLiked={likedReplies.has(reply._id) || (reply.isLikedByCurrentUser ?? false)}
                         replyLikeCount={replyLikeCounts.get(reply._id) ?? reply.likeCount ?? 0}
+                        likedReplies={likedReplies}
+                        replyLikeCounts={replyLikeCounts}
                       />
                     </div>
                   ))

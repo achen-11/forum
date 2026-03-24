@@ -6,10 +6,12 @@ interface HomeSidebarProps {
   categories: Category[]
   tags: Tag[]
   selectedCategoryId: string | null
+  currentView?: 'posts' | 'notifications'
+  onViewChange?: (view: 'posts' | 'notifications') => void
   onSelectCategory: (categoryId: string | null) => void
 }
 
-export function HomeSidebar({ categories, tags, selectedCategoryId, onSelectCategory }: HomeSidebarProps) {
+export function HomeSidebar({ categories, tags, selectedCategoryId, currentView, onViewChange, onSelectCategory }: HomeSidebarProps) {
   return (
     <aside className="w-60 flex-shrink-0 space-y-4 lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:overflow-y-auto">
       {/* Navigation */}
@@ -17,20 +19,28 @@ export function HomeSidebar({ categories, tags, selectedCategoryId, onSelectCate
         <div className="px-3 py-2 mb-1">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400">导航</span>
         </div>
-        <Link
-          to="/"
-          className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg"
+        <button
+          onClick={() => onViewChange?.('posts')}
+          className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg ${
+            currentView === 'posts'
+              ? 'text-indigo-600 bg-indigo-50'
+              : 'text-slate-600 hover:bg-slate-50'
+          }`}
         >
           <Home className="w-4 h-4" />
           首页
-        </Link>
-        <Link
-          to="/messages"
-          className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg"
+        </button>
+        <button
+          onClick={() => onViewChange?.('notifications')}
+          className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg ${
+            currentView === 'notifications'
+              ? 'text-indigo-600 bg-indigo-50'
+              : 'text-slate-600 hover:bg-slate-50'
+          }`}
         >
           <MessageCircle className="w-4 h-4" />
           消息
-        </Link>
+        </button>
         <Link
           to="/profile"
           className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg"
