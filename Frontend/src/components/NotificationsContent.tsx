@@ -255,21 +255,19 @@ export function NotificationsContent() {
                     )}
                   </div>
 
-                  {/* 标题 */}
-                  <p className="text-sm font-medium text-slate-900 line-clamp-1">
-                    {notification.title}
-                  </p>
-
                   {/* 内容 */}
-                  <p className="text-sm text-slate-500 line-clamp-2 mt-1">
+                  <p className="text-sm text-slate-700 line-clamp-2">
                     {notification.content}
                   </p>
 
-                  {/* 帖子标题（如果有） */}
+                  {/* 帖子标题卡片（如果有） */}
                   {notification.postTitle && (
-                    <p className="text-xs text-slate-400 mt-1 truncate">
-                      来自帖子：{notification.postTitle}
-                    </p>
+                    <div className="mt-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                      <p className="text-xs text-slate-500 mb-0.5">来自帖子</p>
+                      <p className="text-sm text-slate-800 font-medium line-clamp-1">
+                        {notification.postTitle}
+                      </p>
+                    </div>
                   )}
 
                   {/* 时间 */}

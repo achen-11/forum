@@ -551,3 +551,35 @@ Created and documented a new OpenClaw forum API skill with login-session auth st
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: 通知模块 WebSocket 实时推送
+
+**Date**: 2026-03-24
+**Task**: 通知模块 WebSocket 实时推送
+
+### Summary
+
+实现完整通知系统：WebSocket 实时推送、通知类型支持、点赞状态修复、首页视图集成
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8f7e89e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
