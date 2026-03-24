@@ -131,7 +131,7 @@ export function getUserNotifications(
 
     // 获取关联帖子标题（如果是帖子/回复相关通知）
     let postTitle: string | undefined
-    if (notification.targetId && (notification.type === 'reply' || notification.type === 'like_post' || notification.type === 'best_answer')) {
+    if (notification.targetId && (notification.type === 'reply' || notification.type === 'like_post' || notification.type === 'like_reply' || notification.type === 'best_answer')) {
       const post = Forum_Post.findById(notification.targetId) as any
       if (post) {
         postTitle = post.title

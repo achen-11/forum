@@ -27,7 +27,9 @@
       "Bash(python3 ./.trellis/scripts/task.py finish)",
       "Bash(ls -la *.json)",
       "Bash(pnpm build:*)",
-      "Bash(python3 ./.trellis/scripts/add_session.py --title \"通知模块 WebSocket 实时推送\" --commit \"8f7e89e\" --summary \"实现完整通知系统：WebSocket 实时推送、通知类型支持、点赞状态修复、首页视图集成\")"
+      "Bash(python3 ./.trellis/scripts/add_session.py --title \"通知模块 WebSocket 实时推送\" --commit \"8f7e89e\" --summary \"实现完整通知系统：WebSocket 实时推送、通知类型支持、点赞状态修复、首页视图集成\")",
+      "Bash(python3 ./.trellis/scripts/task.py list)",
+      "Bash(python3 ./.trellis/scripts/task.py archive 03-24-notification-system)"
     ],
     "deny": [
       "Bash(git push *)"
