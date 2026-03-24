@@ -1,4 +1,18 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(git commit *)",
+      "Bash(git * main)",
+      "Bash(* --version)",
+      "Bash(* --help *)",
+      "Bash(curl *)",
+      "Bash(python3 ./.trellis/scripts/add_session.py --title \"Profile 页面优化 & 登录功能完善\" --commit \"d9275bc,baf961f,7bd188c\" --summary \"本次会话完成了以下功能：1\\) 修复头像上传预览不更新问题；2\\) 移除账户安全中的两步验证和登录会话功能；3\\) 实现修改密码功能；4\\) 我的帖子和收藏功能添加分页支持；5\\) 帖子详情页隐藏作者自己的关注按钮；6\\) 登录页添加记住我功能\")"
+    ],
+    "deny": [
+      "Bash(git push *)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -57,18 +71,5 @@
       }
     ]
   },
-  "enabledPlugins": {},
-  "permissions": {
-    "allow": [
-      "Bash(npm run *)",
-      "Bash(git commit *)",
-      "Bash(git * main)",
-      "Bash(* --version)",
-      "Bash(* --help *)",
-      "Bash(curl *)"
-    ],
-    "deny": [
-      "Bash(git push *)"
-    ]
-  }
+  "enabledPlugins": {}
 }
