@@ -25,6 +25,7 @@ k.api.get('categories', () => {
  * 获取帖子列表
  * 支持 categoryId、authorId 参数筛选（authorId 用于个人中心「我的帖子」）
  * 支持分页参数 page、pageSize
+ * 支持排序参数 sort: recent(最新) | popular(热门)
  */
 k.api.get('list', () => {
     try {
@@ -32,7 +33,8 @@ k.api.get('list', () => {
         const authorId = k.request.get('authorId') || undefined
         const page = parseInt(k.request.get('page') || '1', 10)
         const pageSize = parseInt(k.request.get('pageSize') || '10', 10)
-        const result = ForumPostService.getPostList(categoryId, authorId, page, pageSize)
+        const sort = (k.request.get('sort') as 'recent' | 'popular') || 'recent'
+        const result = ForumPostService.getPostList(categoryId, authorId, page, pageSize, sort)
         return successResponse(result)
     } catch (e: any) {
         return failResponse(e?.message || '获取帖子列表失败')

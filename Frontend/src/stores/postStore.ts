@@ -12,7 +12,7 @@ interface PostState {
 
   fetchCategories: () => Promise<void>
   fetchTags: () => Promise<void>
-  fetchPosts: (categoryId?: string) => Promise<void>
+  fetchPosts: (categoryId?: string, sort?: 'recent' | 'popular') => Promise<void>
   setSelectedCategory: (categoryId: string | null) => void
 }
 
@@ -43,10 +43,10 @@ export const usePostStore = create<PostState>((set, get) => ({
     }
   },
 
-  fetchPosts: async (categoryId?: string) => {
+  fetchPosts: async (categoryId?: string, sort: 'recent' | 'popular' = 'recent') => {
     set({ isLoading: true, error: null })
     try {
-      const data = await postApi.getPostList(categoryId)
+      const data = await postApi.getPostList(categoryId, undefined, 1, 10, sort)
       set({ posts: data.list || [], isLoading: false })
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false })

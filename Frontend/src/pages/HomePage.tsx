@@ -7,10 +7,11 @@ import { PostList } from '@/components/PostList'
 import { Header } from '@/components/Header'
 import { CreatePostDrawer } from '@/components/CreatePostDrawer'
 import { NotificationsContent } from '@/components/NotificationsContent'
+import { MyPostsContent } from '@/components/MyPostsContent'
 import { Plus, X, Folder } from 'lucide-react'
 
-type SortOption = 'recent' | 'popular' | 'unanswered'
-type ViewType = 'posts' | 'notifications'
+type SortOption = 'recent' | 'popular'
+type ViewType = 'posts' | 'notifications' | 'my-posts'
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -30,8 +31,8 @@ export default function HomePage() {
 
   // Sync view from URL
   useEffect(() => {
-    if (viewParam === 'notifications') {
-      setView('notifications')
+    if (viewParam === 'notifications' || viewParam === 'my-posts') {
+      setView(viewParam)
     }
   }, [viewParam])
 
@@ -43,20 +44,27 @@ export default function HomePage() {
   }, [categoryParam, setSelectedCategory])
 
   useEffect(() => {
-    if (!categoryParam) {
-      fetchPosts()
-    } else {
-      fetchPosts(categoryParam)
+    if (view === 'posts') {
+      if (!categoryParam) {
+        fetchPosts(undefined, sortBy)
+      } else {
+        fetchPosts(categoryParam, sortBy)
+      }
     }
-  }, [categoryParam, fetchPosts])
+  }, [categoryParam, sortBy, view, fetchPosts])
 
   // Handle view change
   const handleViewChange = (newView: ViewType) => {
     setView(newView)
-    // Update URL to remove view param when switching to posts
+    // Update URL when switching to posts or my-posts
     if (newView === 'posts') {
       setSearchParams(prev => {
         prev.delete('view')
+        return prev
+      })
+    } else if (newView === 'my-posts') {
+      setSearchParams(prev => {
+        prev.set('view', 'my-posts')
         return prev
       })
     }
@@ -136,12 +144,6 @@ export default function HomePage() {
                     >
                       热门
                     </button>
-                    <button
-                      onClick={() => setSortBy('unanswered')}
-                      className={`text-sm font-medium pb-1 ${sortBy === 'unanswered' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                      待回复
-                    </button>
                   </div>
                   <Button className="gap-1.5 bg-indigo-600 hover:bg-indigo-700" onClick={() => setIsDrawerOpen(true)}>
                     <Plus className="w-4 h-4" />
@@ -151,8 +153,10 @@ export default function HomePage() {
 
                 <PostList />
               </>
-            ) : (
+            ) : view === 'notifications' ? (
               <NotificationsContent />
+            ) : (
+              <MyPostsContent />
             )}
           </section>
         </div>

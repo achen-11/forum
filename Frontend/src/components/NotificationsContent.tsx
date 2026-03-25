@@ -241,18 +241,23 @@ export function NotificationsContent() {
                 )}
 
                 <div className="flex-1 min-w-0">
-                  {/* 类型标签 */}
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      notification.isRead
-                        ? 'bg-slate-100 text-slate-500'
-                        : 'bg-indigo-100 text-indigo-600'
-                    }`}>
-                      {getNotificationTypeName(notification.type)}
+                  {/* 类型标签 + 时间在同一行 */}
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        notification.isRead
+                          ? 'bg-slate-100 text-slate-500'
+                          : 'bg-indigo-100 text-indigo-600'
+                      }`}>
+                        {getNotificationTypeName(notification.type)}
+                      </span>
+                      {!notification.isRead && (
+                        <span className="w-2 h-2 bg-indigo-500 rounded-full" />
+                      )}
+                    </div>
+                    <span className="text-xs text-slate-400">
+                      {formatTime(notification.createdAt)}
                     </span>
-                    {!notification.isRead && (
-                      <span className="w-2 h-2 bg-indigo-500 rounded-full" />
-                    )}
                   </div>
 
                   {/* 内容 */}
@@ -269,11 +274,6 @@ export function NotificationsContent() {
                       </p>
                     </div>
                   )}
-
-                  {/* 时间 */}
-                  <p className="text-xs text-slate-400 mt-2">
-                    {formatTime(notification.createdAt)}
-                  </p>
                 </div>
               </div>
             </div>

@@ -61,7 +61,7 @@ export class ForumPostService {
      * @param page 页码（从 1 开始）
      * @param pageSize 每页数量
      */
-    static getPostList(categoryId?: string, authorId?: string, page: number = 1, pageSize: number = 10) {
+    static getPostList(categoryId?: string, authorId?: string, page: number = 1, pageSize: number = 10, sort: 'recent' | 'popular' = 'recent') {
         // 参数校验
         const pageNum = Math.max(1, page)
         const size = Math.min(50, Math.max(1, pageSize))
@@ -83,6 +83,12 @@ export class ForumPostService {
             params.authorId = authorId
         }
 
+        // 构建 ORDER BY 子句
+        let orderBy = 'p.isPinned DESC, p.createdAt DESC'
+        if (sort === 'popular') {
+            orderBy = 'p.isPinned DESC, p.likeCount DESC, p.createdAt DESC'
+        }
+
         // 使用原生 SQL 进行分页查询
         const sql = `
             SELECT p.*,
@@ -96,7 +102,7 @@ export class ForumPostService {
             LEFT JOIN Forum_User u ON p.authorId = u._id
             LEFT JOIN Forum_Category c ON p.categoryId = c._id
             ${whereClause}
-            ORDER BY p.isPinned DESC, p.createdAt DESC
+            ORDER BY ${orderBy}
             LIMIT @limit OFFSET @offset
         `
         // @ts-ignore

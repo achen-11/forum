@@ -23,8 +23,11 @@ k.api.get('list', () => {
     if (type) {
       options.type = type
     }
-    if (isRead !== undefined) {
-      options.isRead = isRead === 'true'
+    // 只有明确传递 'true' 或 'false' 字符串时才过滤，其他情况（如空字符串、undefined）返回全部
+    if (isRead === 'true') {
+      options.isRead = true
+    } else if (isRead === 'false') {
+      options.isRead = false
     }
 
     const result = getUserNotifications(userId, options)

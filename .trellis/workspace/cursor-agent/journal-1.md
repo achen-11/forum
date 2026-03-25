@@ -583,3 +583,35 @@ Created and documented a new OpenClaw forum API skill with login-session auth st
 ### Next Steps
 
 - None - task complete
+
+
+## Session 13: 通知模块修复 + 首页帖子排序
+
+**Date**: 2026-03-24
+**Task**: 通知模块修复 + 首页帖子排序
+
+### Summary
+
+修复通知 postTitle 为 null 的问题；实现首页帖子最新/热门排序；我的帖子改为内嵌视图显示；通知时间移至右上角；移除待回复 tab；修复 isRead 参数解析问题
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `df8da84` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

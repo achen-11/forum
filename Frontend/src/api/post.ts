@@ -16,13 +16,17 @@ export const postApi = {
    * @param authorId 可选的作者 ID（用于个人中心「我的帖子」）
    * @param page 页码（从 1 开始）
    * @param pageSize 每页数量
+   * @param sort 排序方式: recent(最新) | popular(热门)
    */
-  getPostList: async (categoryId?: string, authorId?: string, page: number = 1, pageSize: number = 10): Promise<{ list: Post[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }> => {
+  getPostList: async (categoryId?: string, authorId?: string, page: number = 1, pageSize: number = 10, sort: 'recent' | 'popular' = 'recent'): Promise<{ list: Post[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }> => {
     const params = new URLSearchParams()
     if (categoryId) params.set('categoryId', categoryId)
     if (authorId) params.set('authorId', authorId)
     params.set('page', String(page))
     params.set('pageSize', String(pageSize))
+    if (sort !== 'recent') {
+      params.set('sort', sort)
+    }
     const url = `/api/forum/post/list?${params.toString()}`
     const data = await http.get<{ list: Post[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }>(url)
     return data as unknown as { list: Post[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
