@@ -198,7 +198,7 @@ export default function SearchPage() {
     <div className="min-h-screen bg-[#f6f6f8]">
       <Header />
       <main className="max-w-7xl mx-auto px-4">
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-80px)]">
           <HomeSidebar
             categories={categories}
             tags={tags}

@@ -40,6 +40,10 @@ const Forum_User = ksql.define(
         },
         lastLoginAt: {
             type: DataTypes.Timestamp
+        },
+        isBanned: {
+            type: DataTypes.Boolean,
+            default: false
         }
     },
     {
