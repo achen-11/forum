@@ -19,5 +19,5 @@ export function failResponse(msg?: string, code?: number, data?: any) {
         message: msg || 'fail'
     }
     k.response.json(response)
-    return response
+    return k.api.httpCode(code || 400)
 }

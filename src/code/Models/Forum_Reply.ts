@@ -6,7 +6,6 @@ const Forum_Reply = ksql.define(
         postId: {
             type: DataTypes.String,
             required: true,
-            ref: { tableName: 'Forum_Post', fieldName: '_id' },
             index: true
         },
         parentId: {
@@ -22,7 +21,6 @@ const Forum_Reply = ksql.define(
         authorId: {
             type: DataTypes.String,
             required: true,
-            ref: { tableName: 'Forum_User', fieldName: '_id' },
             index: true
         },
         content: {

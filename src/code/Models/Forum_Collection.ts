@@ -6,13 +6,11 @@ const Forum_Collection = ksql.define(
         userId: {
             type: DataTypes.String,
             required: true,
-            ref: { tableName: 'Forum_User', fieldName: '_id', onDelete: 'CASCADE' },
             index: true
         },
         postId: {
             type: DataTypes.String,
             required: true,
-            ref: { tableName: 'Forum_Post', fieldName: '_id', onDelete: 'CASCADE' },
             index: true
         }
     },

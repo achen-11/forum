@@ -17,7 +17,6 @@ const Forum_Notification = ksql.define(
     userId: {
       type: DataTypes.String,
       required: true,
-      ref: { tableName: 'Forum_User', fieldName: '_id', onDelete: 'CASCADE' },
       index: true
     },
     type: {

@@ -13,7 +13,6 @@ const Forum_Follow = ksql.define(
         followerId: {
             type: DataTypes.String,
             required: true,
-            ref: { tableName: 'Forum_User', fieldName: '_id', onDelete: 'CASCADE' },
             index: true
         },
         /**
@@ -22,7 +21,6 @@ const Forum_Follow = ksql.define(
         followingId: {
             type: DataTypes.String,
             required: true,
-            ref: { tableName: 'Forum_User', fieldName: '_id', onDelete: 'CASCADE' },
             index: true
         }
     },

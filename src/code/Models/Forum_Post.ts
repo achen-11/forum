@@ -19,12 +19,10 @@ const Forum_Post = ksql.define(
         authorId: {
             type: DataTypes.String,
             required: true,
-            ref: { tableName: 'Forum_User', fieldName: '_id' },
             index: true
         },
         categoryId: {
             type: DataTypes.String,
-            ref: { tableName: 'Forum_Category', fieldName: '_id' },
             index: true
         },
         summary: {
