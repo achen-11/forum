@@ -157,7 +157,7 @@ export function login(body: {
 export function sendVerificationCode(body: {
     accountType: 'phone' | 'email'
     account: string
-    codeType: 'login' | 'register' | 'forgot'
+    codeType: 'login' | 'register' | 'forgot' | 'bind' | 'verify_old'
 }) {
     const { accountType, account, codeType } = body
     let acc = account.trim()
@@ -185,6 +185,13 @@ export function sendVerificationCode(body: {
     if (codeType === 'register' && existing) {
         throw new Error(accountType === 'phone' ? '手机号已存在' : '该邮箱已注册')
     }
+    if (codeType === 'bind') {
+        // 绑定时，新邮箱/手机不能已被他人绑定
+        if (existing) {
+            throw new Error(accountType === 'phone' ? '该手机号已被其他账号绑定' : '该邮箱已被其他账号绑定')
+        }
+    }
+    // verify_old: 更换时验证旧的 - 不检查存在，验证在 verifyOldContact 进行
 
     // 检查发送频率（60秒内只能发送一次）
     const lastSent = k.cache.get(`forum_verify_time_${accountType}_${acc}`)
@@ -566,4 +573,276 @@ export function changePassword(body: {
     if (!updated) throw new Error('密码修改失败')
 
     return
+}
+
+/**
+ * 绑定邮箱（首次绑定）
+ */
+export function bindEmail(email: string, verificationCode: string) {
+    const user = getCurrentUser()
+    if (!user || !user._id) {
+        throw new Error('请先登录')
+    }
+
+    const trimmedEmail = email.trim().toLowerCase()
+    if (!trimmedEmail || !isEmail(trimmedEmail)) {
+        throw new Error('请输入正确的邮箱地址')
+    }
+
+    // 检查邮箱是否已被他人绑定
+    const existing = Forum_User.findOne({ email: trimmedEmail } as any) as any
+    if (existing && existing._id !== user._id) {
+        throw new Error('该邮箱已被其他账号绑定')
+    }
+
+    // 检查当前用户是否已绑定该邮箱
+    if (user.email === trimmedEmail) {
+        throw new Error('该邮箱已绑定到您的账号')
+    }
+
+    // 验证验证码
+    const key = cacheKey('email', trimmedEmail)
+    const stored = k.cache.get(key)
+    if (!stored || stored !== verificationCode.trim()) {
+        throw new Error('验证码错误或已过期')
+    }
+    // 验证成功后删除验证码
+    if (ENV.VERIFY_CODE_ONE_TIME) {
+        k.cache.remove(key)
+    }
+
+    // 绑定邮箱
+    const updated = Forum_User.updateById(user._id, {
+        email: trimmedEmail
+    } as any)
+    if (!updated) throw new Error('绑定失败')
+
+    return getUserDetail(user._id)
+}
+
+/**
+ * 绑定手机（首次绑定）
+ */
+export function bindPhone(phone: string, verificationCode: string) {
+    const user = getCurrentUser()
+    if (!user || !user._id) {
+        throw new Error('请先登录')
+    }
+
+    const trimmedPhone = phone.trim()
+    if (!trimmedPhone || !isPhone(trimmedPhone)) {
+        throw new Error('请输入正确的手机号')
+    }
+
+    // 检查手机是否已被他人绑定
+    const existing = Forum_User.findOne({ phone: trimmedPhone } as any) as any
+    if (existing && existing._id !== user._id) {
+        throw new Error('该手机号已被其他账号绑定')
+    }
+
+    // 检查当前用户是否已绑定该手机
+    if (user.phone === trimmedPhone) {
+        throw new Error('该手机号已绑定到您的账号')
+    }
+
+    // 验证验证码
+    const key = cacheKey('phone', trimmedPhone)
+    const stored = k.cache.get(key)
+    if (!stored || stored !== verificationCode.trim()) {
+        throw new Error('验证码错误或已过期')
+    }
+    // 验证成功后删除验证码
+    if (ENV.VERIFY_CODE_ONE_TIME) {
+        k.cache.remove(key)
+    }
+
+    // 绑定手机
+    const updated = Forum_User.updateById(user._id, {
+        phone: trimmedPhone
+    } as any)
+    if (!updated) throw new Error('绑定失败')
+
+    return getUserDetail(user._id)
+}
+
+/**
+ * 验证旧邮箱/手机验证码（用于更换绑定时的身份验证）
+ */
+export function verifyOldContact(accountType: 'phone' | 'email', account: string, code: string) {
+    const user = getCurrentUser()
+    if (!user || !user._id) {
+        throw new Error('请先登录')
+    }
+
+    let acc = account.trim()
+    if (accountType === 'email') acc = acc.toLowerCase()
+
+    if (!acc) {
+        throw new Error(accountType === 'phone' ? '请输入手机号' : '请输入邮箱地址')
+    }
+
+    // 检查旧邮箱/手机是否属于当前用户
+    if (accountType === 'phone') {
+        if (!isPhone(acc)) throw new Error('请输入正确的手机号')
+        if (user.phone !== acc) {
+            throw new Error('该手机号未绑定到您的账号')
+        }
+    } else {
+        if (!isEmail(acc)) throw new Error('请输入正确的邮箱地址')
+        if (user.email !== acc) {
+            throw new Error('该邮箱未绑定到您的账号')
+        }
+    }
+
+    // 验证验证码
+    const key = cacheKey(accountType, acc)
+    const stored = k.cache.get(key)
+    if (!stored || stored !== code.trim()) {
+        throw new Error('验证码错误或已过期')
+    }
+    // 注意：不删除验证码，由 replaceEmail/replacePhone 在最终验证时删除
+
+    return true
+}
+
+/**
+ * 更换邮箱（先验证旧的，再绑定新的）
+ */
+export function replaceEmail(
+    oldEmail: string,
+    oldCode: string,
+    newEmail: string,
+    newCode: string
+) {
+    const user = getCurrentUser()
+    if (!user || !user._id) {
+        throw new Error('请先登录')
+    }
+
+    const trimmedOldEmail = oldEmail.trim().toLowerCase()
+    const trimmedNewEmail = newEmail.trim().toLowerCase()
+
+    // 验证旧邮箱格式
+    if (!trimmedOldEmail || !isEmail(trimmedOldEmail)) {
+        throw new Error('请输入正确的旧邮箱地址')
+    }
+    // 验证新邮箱格式
+    if (!trimmedNewEmail || !isEmail(trimmedNewEmail)) {
+        throw new Error('请输入正确的新邮箱地址')
+    }
+
+    // 旧邮箱必须是当前用户已绑定的
+    if (user.email !== trimmedOldEmail) {
+        throw new Error('旧邮箱未绑定到您的账号')
+    }
+
+    // 新邮箱不能与旧邮箱相同
+    if (trimmedOldEmail === trimmedNewEmail) {
+        throw new Error('新邮箱不能与旧邮箱相同')
+    }
+
+    // 验证旧邮箱验证码
+    const oldKey = cacheKey('email', trimmedOldEmail)
+    const oldStored = k.cache.get(oldKey)
+    if (!oldStored || oldStored !== oldCode.trim()) {
+        throw new Error('旧邮箱验证码错误或已过期')
+    }
+    if (ENV.VERIFY_CODE_ONE_TIME) {
+        k.cache.remove(oldKey)
+    }
+
+    // 检查新邮箱是否已被他人绑定
+    const existing = Forum_User.findOne({ email: trimmedNewEmail } as any) as any
+    if (existing && existing._id !== user._id) {
+        throw new Error('该邮箱已被其他账号绑定')
+    }
+
+    // 验证新邮箱验证码
+    const newKey = cacheKey('email', trimmedNewEmail)
+    const newStored = k.cache.get(newKey)
+    if (!newStored || newStored !== newCode.trim()) {
+        throw new Error('新邮箱验证码错误或已过期')
+    }
+    if (ENV.VERIFY_CODE_ONE_TIME) {
+        k.cache.remove(newKey)
+    }
+
+    // 更换邮箱
+    const updated = Forum_User.updateById(user._id, {
+        email: trimmedNewEmail
+    } as any)
+    if (!updated) throw new Error('更换邮箱失败')
+
+    return getUserDetail(user._id)
+}
+
+/**
+ * 更换手机（先验证旧的，再绑定新的）
+ */
+export function replacePhone(
+    oldPhone: string,
+    oldCode: string,
+    newPhone: string,
+    newCode: string
+) {
+    const user = getCurrentUser()
+    if (!user || !user._id) {
+        throw new Error('请先登录')
+    }
+
+    const trimmedOldPhone = oldPhone.trim()
+    const trimmedNewPhone = newPhone.trim()
+
+    // 验证旧手机格式
+    if (!trimmedOldPhone || !isPhone(trimmedOldPhone)) {
+        throw new Error('请输入正确的旧手机号')
+    }
+    // 验证新手机格式
+    if (!trimmedNewPhone || !isPhone(trimmedNewPhone)) {
+        throw new Error('请输入正确的新手机号')
+    }
+
+    // 旧手机必须是当前用户已绑定的
+    if (user.phone !== trimmedOldPhone) {
+        throw new Error('旧手机号未绑定到您的账号')
+    }
+
+    // 新手机不能与旧手机相同
+    if (trimmedOldPhone === trimmedNewPhone) {
+        throw new Error('新手机号不能与旧手机号相同')
+    }
+
+    // 验证旧手机验证码
+    const oldKey = cacheKey('phone', trimmedOldPhone)
+    const oldStored = k.cache.get(oldKey)
+    if (!oldStored || oldStored !== oldCode.trim()) {
+        throw new Error('旧手机验证码错误或已过期')
+    }
+    if (ENV.VERIFY_CODE_ONE_TIME) {
+        k.cache.remove(oldKey)
+    }
+
+    // 检查新手机是否已被他人绑定
+    const existing = Forum_User.findOne({ phone: trimmedNewPhone } as any) as any
+    if (existing && existing._id !== user._id) {
+        throw new Error('该手机号已被其他账号绑定')
+    }
+
+    // 验证新手机验证码
+    const newKey = cacheKey('phone', trimmedNewPhone)
+    const newStored = k.cache.get(newKey)
+    if (!newStored || newStored !== newCode.trim()) {
+        throw new Error('新手机验证码错误或已过期')
+    }
+    if (ENV.VERIFY_CODE_ONE_TIME) {
+        k.cache.remove(newKey)
+    }
+
+    // 更换手机
+    const updated = Forum_User.updateById(user._id, {
+        phone: trimmedNewPhone
+    } as any)
+    if (!updated) throw new Error('更换手机失败')
+
+    return getUserDetail(user._id)
 }

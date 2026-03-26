@@ -1,6 +1,6 @@
 // @k-url /api/forum/auth/{action}
 
-import { login, logout, sendVerificationCode, verifyVerificationCode, register, resetPassword, getCurrentUser, getUserDetail, updateProfile, changePassword } from "code/Services/auth";
+import { login, logout, sendVerificationCode, verifyVerificationCode, register, resetPassword, getCurrentUser, getUserDetail, updateProfile, changePassword, bindEmail, bindPhone, verifyOldContact, replaceEmail, replacePhone } from "code/Services/auth";
 import { followUser, unfollowUser, getUserFollowersCount, getUserFollowingCount, isFollowing, getUserComments } from "code/Services/ForumUserService";
 import { successResponse, failResponse } from "code/Utils/ResponseUtils";
 
@@ -35,7 +35,7 @@ k.api.post('login', (body: {
 k.api.post('send-code', (body: {
   account?: string;
   accountType?: 'phone' | 'email';
-  codeType?: 'login' | 'register' | 'forgot';
+  codeType?: 'login' | 'register' | 'forgot' | 'bind' | 'verify_old';
 }) => {
   try {
     const data = sendVerificationCode({
@@ -296,6 +296,136 @@ k.api.post('change-password', (body: {
       newPassword: body.newPassword ?? ''
     });
     return successResponse(null, '密码修改成功');
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 绑定邮箱（首次绑定）
+ * 需登录
+ */
+k.api.post('bind-email', (body: {
+  email?: string;
+  verificationCode?: string;
+}) => {
+  try {
+    if (!body.email) {
+      return failResponse('请输入邮箱地址');
+    }
+    if (!body.verificationCode) {
+      return failResponse('请输入验证码');
+    }
+    const user = bindEmail(body.email, body.verificationCode);
+    return successResponse(user, '邮箱绑定成功');
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 绑定手机（首次绑定）
+ * 需登录
+ */
+k.api.post('bind-phone', (body: {
+  phone?: string;
+  verificationCode?: string;
+}) => {
+  try {
+    if (!body.phone) {
+      return failResponse('请输入手机号');
+    }
+    if (!body.verificationCode) {
+      return failResponse('请输入验证码');
+    }
+    const user = bindPhone(body.phone, body.verificationCode);
+    return successResponse(user, '手机号绑定成功');
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 验证旧邮箱/手机（用于更换绑定时的身份验证）
+ * 需登录
+ */
+k.api.post('verify-old-contact', (body: {
+  account?: string;
+  accountType?: 'phone' | 'email';
+  code?: string;
+}) => {
+  try {
+    if (!body.account) {
+      return failResponse('请输入账号');
+    }
+    if (!body.accountType) {
+      return failResponse('请选择账号类型');
+    }
+    if (!body.code) {
+      return failResponse('请输入验证码');
+    }
+    verifyOldContact(body.accountType, body.account, body.code);
+    return successResponse(null, '验证成功');
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 更换邮箱（先验证旧的，再绑定新的）
+ * 需登录
+ */
+k.api.post('replace-email', (body: {
+  oldEmail?: string;
+  oldCode?: string;
+  newEmail?: string;
+  newCode?: string;
+}) => {
+  try {
+    if (!body.oldEmail) {
+      return failResponse('请输入旧邮箱');
+    }
+    if (!body.oldCode) {
+      return failResponse('请输入旧邮箱验证码');
+    }
+    if (!body.newEmail) {
+      return failResponse('请输入新邮箱');
+    }
+    if (!body.newCode) {
+      return failResponse('请输入新邮箱验证码');
+    }
+    const user = replaceEmail(body.oldEmail, body.oldCode, body.newEmail, body.newCode);
+    return successResponse(user, '邮箱更换成功');
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * 更换手机（先验证旧的，再绑定新的）
+ * 需登录
+ */
+k.api.post('replace-phone', (body: {
+  oldPhone?: string;
+  oldCode?: string;
+  newPhone?: string;
+  newCode?: string;
+}) => {
+  try {
+    if (!body.oldPhone) {
+      return failResponse('请输入旧手机号');
+    }
+    if (!body.oldCode) {
+      return failResponse('请输入旧手机验证码');
+    }
+    if (!body.newPhone) {
+      return failResponse('请输入新手机号');
+    }
+    if (!body.newCode) {
+      return failResponse('请输入新手机验证码');
+    }
+    const user = replacePhone(body.oldPhone, body.oldCode, body.newPhone, body.newCode);
+    return successResponse(user, '手机号更换成功');
   } catch (e: any) {
     return failResponse(e?.message || '服务器错误');
   }
