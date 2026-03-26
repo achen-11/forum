@@ -15,5 +15,6 @@ const ENV = {
     EMAIL_USERNAME: emailConfig?.userName || '',
     SENDER_EMAIL: emailConfig?.sendEmail || '',
     EMAIL_PASSWORD: emailConfig?.password || '',
+    SMS_TEMPLATE_ID: "SMS_489735268"
 }
 export default ENV

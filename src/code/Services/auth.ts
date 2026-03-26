@@ -431,7 +431,7 @@ function sendEmailCode(email: string, code: string) {
     server.host = ENV.EMAIL_HOST
     server.port = ENV.EMAIL_PORT
     server.ssl = ENV.EMAIL_SSL
-    server.username = ENV.EMAIL_USERNAME
+    server.username = ENV.SENDER_EMAIL
     server.password = ENV.EMAIL_PASSWORD
 
     const msg = k.mail.createMessage()
