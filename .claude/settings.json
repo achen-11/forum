@@ -30,7 +30,9 @@
       "Bash(python3 ./.trellis/scripts/add_session.py --title \"通知模块 WebSocket 实时推送\" --commit \"8f7e89e\" --summary \"实现完整通知系统：WebSocket 实时推送、通知类型支持、点赞状态修复、首页视图集成\")",
       "Bash(python3 ./.trellis/scripts/task.py list)",
       "Bash(python3 ./.trellis/scripts/task.py archive 03-24-notification-system)",
-      "Bash(python3 ./.trellis/scripts/add_session.py --title \"通知模块修复 + 首页帖子排序\" --commit \"df8da84\" --summary \"修复通知 postTitle 为 null 的问题；实现首页帖子最新/热门排序；我的帖子改为内嵌视图显示；通知时间移至右上角；移除待回复 tab；修复 isRead 参数解析问题\")"
+      "Bash(python3 ./.trellis/scripts/add_session.py --title \"通知模块修复 + 首页帖子排序\" --commit \"df8da84\" --summary \"修复通知 postTitle 为 null 的问题；实现首页帖子最新/热门排序；我的帖子改为内嵌视图显示；通知时间移至右上角；移除待回复 tab；修复 isRead 参数解析问题\")",
+      "Bash(sqlite3 sqlite.db \".tables\")",
+      "Bash(sqlite3 sqlite.db \":*)"
     ],
     "deny": [
       "Bash(git push *)"

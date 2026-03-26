@@ -110,8 +110,8 @@ export function Header({ onShowAllNotifications }: HeaderProps) {
         {/* Logo */}
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2 text-indigo-600">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">F</span>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+              <img src='/forum.svg' />
             </div>
             <h1 className="text-xl font-bold text-slate-900 hidden sm:block">Kooboo Forum</h1>
           </Link>
