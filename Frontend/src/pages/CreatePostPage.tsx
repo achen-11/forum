@@ -84,6 +84,7 @@ export default function CreatePostPage() {
       const post = await postApi.createPost({
         title: title.trim(),
         content: htmlContent,
+        markdownContent: content,
         categoryId,
         tags: selectedTags.map(t => t.name),
       })

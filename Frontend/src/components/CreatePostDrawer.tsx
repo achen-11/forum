@@ -49,10 +49,10 @@ export function PostFormDrawer({ open, onOpenChange, mode, initialData, onSucces
       setNewTagName('')
       setContent('')
     } else if (isEditMode && initialData) {
-      // Pre-fill data for edit mode (strip HTML tags from content for markdown editor)
+      // Pre-fill data for edit mode - use markdownContent directly
       setTitle(initialData.title || '')
       setCategoryId(initialData.categoryId || '')
-      setContent(initialData.content?.replace(/<[^>]*>/g, '') || '')
+      setContent(initialData.markdownContent || initialData.content?.replace(/<[^>]*>/g, '') || '')
       // Note: Tags would need to be loaded and matched by name
     }
   }, [open, isEditMode, initialData])
@@ -171,6 +171,7 @@ export function PostFormDrawer({ open, onOpenChange, mode, initialData, onSucces
           postId: initialData._id,
           title: title.trim(),
           content: htmlContent,
+          markdownContent: content,
         })
         onOpenChange(false)
         onSuccess?.(post)
@@ -179,6 +180,7 @@ export function PostFormDrawer({ open, onOpenChange, mode, initialData, onSucces
         const post = await postApi.createPost({
           title: title.trim(),
           content: htmlContent,
+          markdownContent: content,
           categoryId,
           tags: selectedTags.map(t => t.name),
         })

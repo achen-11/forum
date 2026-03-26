@@ -171,16 +171,18 @@ export class ForumPostService {
      * 创建帖子
      * @param title 帖子标题
      * @param content 帖子内容（HTML）
+     * @param markdownContent 原始 Markdown 内容
      * @param categoryId 分类 ID
      * @param authorId 作者 ID
      */
-    static createPost(title: string, content: string, categoryId: string, authorId: string) {
+    static createPost(title: string, content: string, markdownContent: string, categoryId: string, authorId: string) {
         // 生成摘要（取内容纯文本前 100 字）
         const summary = content.replace(/<[^>]*>/g, '').slice(0, 100) + (content.length > 100 ? '...' : '')
 
         const postId = Forum_Post.create({
             title,
             content,
+            markdownContent,
             summary,
             authorId,
             categoryId,
@@ -768,10 +770,11 @@ export class ForumPostService {
      * 编辑帖子
      * @param postId 帖子 ID
      * @param title 新标题
-     * @param content 新内容
+     * @param content 新内容（HTML）
+     * @param markdownContent 原始 Markdown 内容
      * @returns 更新后的帖子
      */
-    static editPost(postId: string, title: string, content: string) {
+    static editPost(postId: string, title: string, content: string, markdownContent: string) {
         const user = getCurrentUser()
         if (!user) {
             throw new Error('请先登录')
@@ -794,6 +797,7 @@ export class ForumPostService {
         Forum_Post.updateById(postId, {
             title,
             content,
+            markdownContent,
             summary,
             isEdited: true,
             editedAt: Date.now()

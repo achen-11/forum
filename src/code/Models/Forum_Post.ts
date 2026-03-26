@@ -11,6 +11,11 @@ const Forum_Post = ksql.define(
             type: DataTypes.String,
             required: true
         },
+        // 原始 Markdown 内容，用于编辑时还原
+        markdownContent: {
+            type: DataTypes.String,
+            required: true,
+        },
         authorId: {
             type: DataTypes.String,
             required: true,
@@ -46,25 +51,24 @@ const Forum_Post = ksql.define(
             default: false,
             index: true
         },
+        // 是否已编辑
         isEdited: {
             type: DataTypes.Boolean,
             default: false,
-            comment: '是否已编辑'
         },
+        // 编辑时间
         editedAt: {
             type: DataTypes.Timestamp,
-            comment: '编辑时间'
         },
+        // 是否已解决
         isSolved: {
             type: DataTypes.Boolean,
             default: false,
             index: true,
-            comment: '是否已解决'
         },
+        // 被接受的回复 ID
         acceptedReplyId: {
             type: DataTypes.String,
-            default: null,
-            comment: '被接受的回复 ID'
         }
     },
     {

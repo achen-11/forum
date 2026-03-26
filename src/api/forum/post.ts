@@ -317,14 +317,14 @@ k.api.post('create', () => {
 
         // 解析请求参数
         const bodyStr = k.request.body
-        let body: { title?: string; content?: string; categoryId?: string; tags?: string[] }
+        let body: { title?: string; content?: string; markdownContent?: string; categoryId?: string; tags?: string[] }
         try {
             body = typeof bodyStr === 'string' ? JSON.parse(bodyStr) : bodyStr
         } catch {
             return failResponse('请求参数格式错误')
         }
 
-        const { title, content, categoryId, tags } = body
+        const { title, content, markdownContent, categoryId, tags } = body
 
         // 参数验证
         if (!title || title.trim().length === 0) {
@@ -338,7 +338,7 @@ k.api.post('create', () => {
         }
 
         // 创建帖子
-        const post = ForumPostService.createPost(title, content, categoryId, userId)
+        const post = ForumPostService.createPost(title, content, markdownContent || '', categoryId, userId)
 
         // 如果有标签，添加到帖子
         if (tags && tags.length > 0 && post) {
@@ -453,14 +453,14 @@ k.api.post('edit', () => {
 
         // 解析请求参数
         const bodyStr = k.request.body
-        let body: { postId?: string; title?: string; content?: string }
+        let body: { postId?: string; title?: string; content?: string; markdownContent?: string }
         try {
             body = typeof bodyStr === 'string' ? JSON.parse(bodyStr) : bodyStr
         } catch {
             return failResponse('请求参数格式错误')
         }
 
-        const { postId, title, content } = body
+        const { postId, title, content, markdownContent } = body
 
         // 参数验证
         if (!postId) {
@@ -474,7 +474,7 @@ k.api.post('edit', () => {
         }
 
         // 编辑帖子
-        const post = ForumPostService.editPost(postId, title, content)
+        const post = ForumPostService.editPost(postId, title, content, markdownContent || '')
         return successResponse({ post })
     } catch (e: any) {
         return failResponse(e?.message || '编辑帖子失败')

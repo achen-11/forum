@@ -12,6 +12,7 @@ export interface Post {
   _id: string
   title: string
   content: string
+  markdownContent: string
   summary?: string
   authorId: string
   author?: UserInfo
@@ -100,6 +101,7 @@ export interface CategoryListResponse {
 export interface CreatePostParams {
   title: string
   content: string
+  markdownContent: string
   categoryId: string
   tags?: string[]
 }
@@ -155,6 +157,7 @@ export interface EditPostParams {
   postId: string
   title: string
   content: string
+  markdownContent: string
 }
 
 // 删除帖子/回复响应
