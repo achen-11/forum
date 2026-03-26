@@ -615,3 +615,35 @@ Created and documented a new OpenClaw forum API skill with login-session auth st
 ### Next Steps
 
 - None - task complete
+
+
+## Session 14: 帖子 Markdown 源码双字段存储
+
+**Date**: 2026-03-26
+**Task**: 帖子 Markdown 源码双字段存储
+
+### Summary
+
+实现帖子 Markdown 源码存储：Forum_Post 新增 markdownContent 字段，发帖/编辑时同时存储原始 Markdown 和渲染后的 HTML，编辑时可完整还原格式
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2fc092b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

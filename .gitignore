@@ -161,3 +161,4 @@ kooboo.d.ts
 .trellis/workspace/cursor-agent/stitch/*
 
 Frontend/@/*
+.claude/settings.json
