@@ -647,3 +647,35 @@ Created and documented a new OpenClaw forum API skill with login-session auth st
 ### Next Steps
 
 - None - task complete
+
+
+## Session 15: 移除 Models 外键约束 ref
+
+**Date**: 2026-03-26
+**Task**: 移除 Models 外键约束 ref
+
+### Summary
+
+移除 src/code/Models 中所有 ref 外键约束，保留 index 索引。修改了 Forum_Post、Forum_Post_Tag、Forum_Like、Forum_Follow、Forum_Collection、Forum_Notification、Forum_Reply 等 8 个文件。
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4b01346` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

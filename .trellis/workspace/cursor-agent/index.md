@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 14
+- **Total Sessions**: 15
 - **Last Active**: 2026-03-26
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~649 | Active |
+| `journal-1.md` | ~681 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 15 | 2026-03-26 | 移除 Models 外键约束 ref | `4b01346` |
 | 14 | 2026-03-26 | 帖子 Markdown 源码双字段存储 | `2fc092b` |
 | 13 | 2026-03-24 | 通知模块修复 + 首页帖子排序 | `df8da84` |
 | 12 | 2026-03-24 | 通知模块 WebSocket 实时推送 | `8f7e89e` |
