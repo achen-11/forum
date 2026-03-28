@@ -679,3 +679,35 @@ Created and documented a new OpenClaw forum API skill with login-session auth st
 ### Next Steps
 
 - None - task complete
+
+
+## Session 16: profile 绑定邮箱和手机功能完成
+
+**Date**: 2026-03-28
+**Task**: profile 绑定邮箱和手机功能完成
+
+### Summary
+
+实现 profile 页面绑定邮箱和手机功能：首次绑定流程、替换绑定流程（含旧联系方式验证）、验证码倒计时重置、新邮箱/手机不能与旧的一致验证
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d9eff3b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

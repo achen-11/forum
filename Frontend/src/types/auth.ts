@@ -18,7 +18,7 @@ export interface LoginResponse {
 export interface SendCodeRequest {
   account: string
   accountType: 'phone' | 'email'
-  codeType: 'login' | 'register' | 'forgot'
+  codeType: 'login' | 'register' | 'forgot' | 'bind' | 'verify_old'
 }
 
 export interface SendCodeResponse {

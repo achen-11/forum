@@ -14,6 +14,10 @@ interface AuthState {
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
   updateProfile: (data: { displayName?: string; avatar?: string }) => Promise<void>
+  bindEmail: (email: string, verificationCode: string) => Promise<UserInfo>
+  bindPhone: (phone: string, verificationCode: string) => Promise<UserInfo>
+  replaceEmail: (oldEmail: string, oldCode: string, newEmail: string, newCode: string) => Promise<UserInfo>
+  replacePhone: (oldPhone: string, oldCode: string, newPhone: string, newCode: string) => Promise<UserInfo>
   clearError: () => void
   register: (data: {
     userName?: string
@@ -92,6 +96,30 @@ export const useAuthStore = create<AuthState>()(
         } catch (error: unknown) {
           throw error
         }
+      },
+
+      bindEmail: async (email: string, verificationCode: string) => {
+        const user = await authApi.bindEmail({ email, verificationCode })
+        set({ user })
+        return user
+      },
+
+      bindPhone: async (phone: string, verificationCode: string) => {
+        const user = await authApi.bindPhone({ phone, verificationCode })
+        set({ user })
+        return user
+      },
+
+      replaceEmail: async (oldEmail: string, oldCode: string, newEmail: string, newCode: string) => {
+        const user = await authApi.replaceEmail({ oldEmail, oldCode, newEmail, newCode })
+        set({ user })
+        return user
+      },
+
+      replacePhone: async (oldPhone: string, oldCode: string, newPhone: string, newCode: string) => {
+        const user = await authApi.replacePhone({ oldPhone, oldCode, newPhone, newCode })
+        set({ user })
+        return user
       },
 
       clearError: () => set({ error: null }),

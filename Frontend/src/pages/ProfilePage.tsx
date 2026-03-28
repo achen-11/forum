@@ -24,13 +24,14 @@ import {
   Calendar,
   Shield,
   ChevronRight,
+  Phone,
 } from 'lucide-react'
 
 type NavItem = 'profile' | 'posts' | 'saved' | 'notifications'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
-  const { user, logout, updateProfile } = useAuthStore()
+  const { user, logout, updateProfile, bindEmail: bindEmailAction, bindPhone: bindPhoneAction, replaceEmail: replaceEmailAction, replacePhone: replacePhoneAction } = useAuthStore()
 
   // Navigation state
   const [activeNav, setActiveNav] = useState<NavItem>('profile')
@@ -72,6 +73,30 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordLoading, setPasswordLoading] = useState(false)
+
+  // Bind email modal states
+  const [bindEmailOpen, setBindEmailOpen] = useState(false)
+  const [bindEmailStep, setBindEmailStep] = useState<'input' | 'verify_old' | 'verify_new'>('input')
+  const [bindEmail, setBindEmail] = useState('')
+  const [bindEmailCode, setBindEmailCode] = useState('')
+  const [oldEmailForReplace, setOldEmailForReplace] = useState('')
+  const [oldEmailCode, setOldEmailCode] = useState('')
+  const [newEmailForBind, setNewEmailForBind] = useState('')
+  const [newEmailCode, setNewEmailCode] = useState('')
+  const [bindEmailLoading, setBindEmailLoading] = useState(false)
+  const [sendCodeLoading, setSendCodeLoading] = useState(false)
+  const [countdown, setCountdown] = useState(0)
+
+  // Bind phone modal states
+  const [bindPhoneOpen, setBindPhoneOpen] = useState(false)
+  const [bindPhoneStep, setBindPhoneStep] = useState<'input' | 'verify_old' | 'verify_new'>('input')
+  const [bindPhone, setBindPhone] = useState('')
+  const [bindPhoneCode, setBindPhoneCode] = useState('')
+  const [oldPhoneForReplace, setOldPhoneForReplace] = useState('')
+  const [oldPhoneCode, setOldPhoneCode] = useState('')
+  const [newPhoneForBind, setNewPhoneForBind] = useState('')
+  const [newPhoneCode, setNewPhoneCode] = useState('')
+  const [bindPhoneLoading, setBindPhoneLoading] = useState(false)
 
 
   // Saved posts state
@@ -189,6 +214,194 @@ export default function ProfilePage() {
     } finally {
       setPasswordLoading(false)
     }
+  }
+
+  // Countdown timer for resend code
+  useEffect(() => {
+    if (countdown <= 0) return
+    const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [countdown])
+
+  // Handle send verification code
+  const handleSendCode = async (account: string, accountType: 'phone' | 'email', codeType: 'bind' | 'verify_old') => {
+    const trimmedAccount = account.trim()
+    if (!trimmedAccount) {
+      toast.error(accountType === 'email' ? '请输入邮箱地址' : '请输入手机号')
+      return
+    }
+    if (accountType === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedAccount)) {
+      toast.error('请输入正确的邮箱地址')
+      return
+    }
+    if (accountType === 'phone' && !/^1[3-9]\d{9}$/.test(trimmedAccount)) {
+      toast.error('请输入正确的手机号')
+      return
+    }
+    setSendCodeLoading(true)
+    try {
+      await authApi.sendCode({ account: trimmedAccount, accountType, codeType })
+      toast.success('验证码已发送')
+      setCountdown(60)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '发送失败')
+    } finally {
+      setSendCodeLoading(false)
+    }
+  }
+
+  // Handle bind email
+  const handleBindEmail = async () => {
+    if (!bindEmail.trim()) {
+      toast.error('请输入邮箱地址')
+      return
+    }
+    if (!bindEmailCode.trim()) {
+      toast.error('请输入验证码')
+      return
+    }
+    setBindEmailLoading(true)
+    try {
+      await bindEmailAction(bindEmail.trim(), bindEmailCode.trim())
+      toast.success('邮箱绑定成功')
+      setBindEmailOpen(false)
+      resetBindEmailState()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '绑定失败')
+    } finally {
+      setBindEmailLoading(false)
+    }
+  }
+
+  // Handle replace email
+  const handleReplaceEmail = async () => {
+    if (!newEmailForBind.trim() || !newEmailCode.trim()) {
+      toast.error('请填写完整信息')
+      return
+    }
+    if (newEmailForBind.trim().toLowerCase() === user?.email?.toLowerCase()) {
+      toast.error('新邮箱不能与旧邮箱相同')
+      return
+    }
+    setBindEmailLoading(true)
+    try {
+      await replaceEmailAction(user!.email, oldEmailCode.trim(), newEmailForBind.trim(), newEmailCode.trim())
+      toast.success('邮箱更换成功')
+      setBindEmailOpen(false)
+      resetBindEmailState()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '更换失败')
+    } finally {
+      setBindEmailLoading(false)
+    }
+  }
+
+  // Handle verify old email (for replace flow)
+  const handleVerifyOldEmail = async () => {
+    if (!user?.email || !oldEmailCode.trim()) {
+      toast.error('请输入验证码')
+      return
+    }
+    setBindEmailLoading(true)
+    try {
+      await authApi.verifyOldContact({ account: user.email, accountType: 'email', code: oldEmailCode.trim() })
+      toast.success('验证成功')
+      setBindEmailStep('verify_new')
+      setCountdown(0) // 重置倒计时
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '验证失败')
+    } finally {
+      setBindEmailLoading(false)
+    }
+  }
+
+  // Handle bind phone
+  const handleBindPhone = async () => {
+    if (!bindPhone.trim()) {
+      toast.error('请输入手机号')
+      return
+    }
+    if (!bindPhoneCode.trim()) {
+      toast.error('请输入验证码')
+      return
+    }
+    setBindPhoneLoading(true)
+    try {
+      await bindPhoneAction(bindPhone.trim(), bindPhoneCode.trim())
+      toast.success('手机号绑定成功')
+      setBindPhoneOpen(false)
+      resetBindPhoneState()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '绑定失败')
+    } finally {
+      setBindPhoneLoading(false)
+    }
+  }
+
+  // Handle replace phone
+  const handleReplacePhone = async () => {
+    if (!newPhoneForBind.trim() || !newPhoneCode.trim()) {
+      toast.error('请填写完整信息')
+      return
+    }
+    if (newPhoneForBind.trim() === user?.phone) {
+      toast.error('新手机号不能与旧手机号相同')
+      return
+    }
+    setBindPhoneLoading(true)
+    try {
+      await replacePhoneAction(user!.phone, oldPhoneCode.trim(), newPhoneForBind.trim(), newPhoneCode.trim())
+      toast.success('手机号更换成功')
+      setBindPhoneOpen(false)
+      resetBindPhoneState()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '更换失败')
+    } finally {
+      setBindPhoneLoading(false)
+    }
+  }
+
+  // Handle verify old phone (for replace flow)
+  const handleVerifyOldPhone = async () => {
+    if (!user?.phone || !oldPhoneCode.trim()) {
+      toast.error('请输入验证码')
+      return
+    }
+    setBindPhoneLoading(true)
+    try {
+      await authApi.verifyOldContact({ account: user.phone, accountType: 'phone', code: oldPhoneCode.trim() })
+      toast.success('验证成功')
+      setBindPhoneStep('verify_new')
+      setCountdown(0) // 重置倒计时
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '验证失败')
+    } finally {
+      setBindPhoneLoading(false)
+    }
+  }
+
+  // Reset bind email state
+  const resetBindEmailState = () => {
+    setBindEmailStep('input')
+    setBindEmail('')
+    setBindEmailCode('')
+    setOldEmailForReplace('')
+    setOldEmailCode('')
+    setNewEmailForBind('')
+    setNewEmailCode('')
+    setCountdown(0)
+  }
+
+  // Reset bind phone state
+  const resetBindPhoneState = () => {
+    setBindPhoneStep('input')
+    setBindPhone('')
+    setBindPhoneCode('')
+    setOldPhoneForReplace('')
+    setOldPhoneCode('')
+    setNewPhoneForBind('')
+    setNewPhoneCode('')
+    setCountdown(0)
   }
 
   // Handle load more posts
@@ -388,6 +601,36 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-4">
+                {/* Bind / Replace Email */}
+                <button
+                  onClick={() => {
+                    resetBindEmailState()
+                    setBindEmailOpen(true)
+                  }}
+                  className="w-full text-left flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Mail className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm font-medium">邮箱 {user.email ? '已绑定' : '未绑定'}</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
+
+                {/* Bind / Replace Phone */}
+                <button
+                  onClick={() => {
+                    resetBindPhoneState()
+                    setBindPhoneOpen(true)
+                  }}
+                  className="w-full text-left flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm font-medium">手机号 {user.phone ? '已绑定' : '未绑定'}</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
+
                 {/* Change Password */}
                 <button
                   onClick={() => setPasswordOpen(true)}
@@ -855,6 +1098,376 @@ export default function ProfilePage() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bind Email Modal */}
+      {bindEmailOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">
+                {user.email ? '更换邮箱' : '绑定邮箱'}
+              </h2>
+              <button
+                onClick={() => {
+                  setBindEmailOpen(false)
+                  resetBindEmailState()
+                }}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* If already bound, show replace flow */}
+            {user.email ? (
+              bindEmailStep === 'input' ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-500">为保障账号安全，更换邮箱需要先验证您当前绑定的邮箱。</p>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">当前邮箱</label>
+                    <Input
+                      value={oldEmailForReplace}
+                      onChange={(e) => setOldEmailForReplace(e.target.value)}
+                      placeholder={user.email}
+                      className="mt-1"
+                      disabled
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">验证码</label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        value={oldEmailCode}
+                        onChange={(e) => setOldEmailCode(e.target.value)}
+                        placeholder="输入验证码"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSendCode(user.email, 'email', 'verify_old')}
+                        disabled={sendCodeLoading || countdown > 0 || !user.email}
+                      >
+                        {sendCodeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : countdown > 0 ? `${countdown}s` : '发送验证码'}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      onClick={handleVerifyOldEmail}
+                      disabled={bindEmailLoading || !oldEmailCode.trim()}
+                      className="flex-1"
+                    >
+                      {bindEmailLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : '验证'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setBindEmailOpen(false)
+                        resetBindEmailState()
+                      }}
+                    >
+                      取消
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-500">验证成功，请输入新的邮箱地址。</p>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">新邮箱</label>
+                    <Input
+                      value={newEmailForBind}
+                      onChange={(e) => setNewEmailForBind(e.target.value)}
+                      placeholder="输入新邮箱"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">验证码</label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        value={newEmailCode}
+                        onChange={(e) => setNewEmailCode(e.target.value)}
+                        placeholder="输入验证码"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (newEmailForBind.trim().toLowerCase() === user?.email?.toLowerCase()) {
+                            toast.error('新邮箱不能与旧邮箱相同')
+                            return
+                          }
+                          handleSendCode(newEmailForBind, 'email', 'bind')
+                        }}
+                        disabled={sendCodeLoading || countdown > 0 || !newEmailForBind.trim()}
+                      >
+                        {sendCodeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : countdown > 0 ? `${countdown}s` : '发送验证码'}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      onClick={handleReplaceEmail}
+                      disabled={bindEmailLoading || !newEmailCode.trim() || !newEmailForBind.trim()}
+                      className="flex-1"
+                    >
+                      {bindEmailLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : '更换邮箱'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setBindEmailStep('input')
+                        setNewEmailForBind('')
+                        setNewEmailCode('')
+                      }}
+                    >
+                      上一步
+                    </Button>
+                  </div>
+                </div>
+              )
+            ) : (
+              /* First time bind - no email bound */
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">邮箱地址</label>
+                  <Input
+                    value={bindEmail}
+                    onChange={(e) => setBindEmail(e.target.value)}
+                    placeholder="输入邮箱地址"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">验证码</label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      value={bindEmailCode}
+                      onChange={(e) => setBindEmailCode(e.target.value)}
+                      placeholder="输入验证码"
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSendCode(bindEmail, 'email', 'bind')}
+                      disabled={sendCodeLoading || countdown > 0 || !bindEmail.trim()}
+                    >
+                      {sendCodeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : countdown > 0 ? `${countdown}s` : '发送验证码'}
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={handleBindEmail}
+                    disabled={bindEmailLoading || !bindEmailCode.trim()}
+                    className="flex-1"
+                  >
+                    {bindEmailLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : '绑定'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setBindEmailOpen(false)
+                      resetBindEmailState()
+                    }}
+                  >
+                    取消
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Bind Phone Modal */}
+      {bindPhoneOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">
+                {user.phone ? '更换手机号' : '绑定手机号'}
+              </h2>
+              <button
+                onClick={() => {
+                  setBindPhoneOpen(false)
+                  resetBindPhoneState()
+                }}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* If already bound, show replace flow */}
+            {user.phone ? (
+              bindPhoneStep === 'input' ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-500">为保障账号安全，更换手机号需要先验证您当前绑定的手机号。</p>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">当前手机号</label>
+                    <Input
+                      value={oldPhoneForReplace}
+                      onChange={(e) => setOldPhoneForReplace(e.target.value)}
+                      placeholder={user.phone}
+                      className="mt-1"
+                      disabled
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">验证码</label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        value={oldPhoneCode}
+                        onChange={(e) => setOldPhoneCode(e.target.value)}
+                        placeholder="输入验证码"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSendCode(user.phone, 'phone', 'verify_old')}
+                        disabled={sendCodeLoading || countdown > 0 || !user.phone}
+                      >
+                        {sendCodeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : countdown > 0 ? `${countdown}s` : '发送验证码'}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      onClick={handleVerifyOldPhone}
+                      disabled={bindPhoneLoading || !oldPhoneCode.trim()}
+                      className="flex-1"
+                    >
+                      {bindPhoneLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : '验证'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setBindPhoneOpen(false)
+                        resetBindPhoneState()
+                      }}
+                    >
+                      取消
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-500">验证成功，请输入新的手机号。</p>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">新手机号</label>
+                    <Input
+                      value={newPhoneForBind}
+                      onChange={(e) => setNewPhoneForBind(e.target.value)}
+                      placeholder="输入新手机号"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">验证码</label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        value={newPhoneCode}
+                        onChange={(e) => setNewPhoneCode(e.target.value)}
+                        placeholder="输入验证码"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (newPhoneForBind.trim() === user?.phone) {
+                            toast.error('新手机号不能与旧手机号相同')
+                            return
+                          }
+                          handleSendCode(newPhoneForBind, 'phone', 'bind')
+                        }}
+                        disabled={sendCodeLoading || countdown > 0 || !newPhoneForBind.trim()}
+                      >
+                        {sendCodeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : countdown > 0 ? `${countdown}s` : '发送验证码'}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      onClick={handleReplacePhone}
+                      disabled={bindPhoneLoading || !newPhoneCode.trim() || !newPhoneForBind.trim()}
+                      className="flex-1"
+                    >
+                      {bindPhoneLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : '更换手机号'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setBindPhoneStep('input')
+                        setNewPhoneForBind('')
+                        setNewPhoneCode('')
+                      }}
+                    >
+                      上一步
+                    </Button>
+                  </div>
+                </div>
+              )
+            ) : (
+              /* First time bind - no phone bound */
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">手机号</label>
+                  <Input
+                    value={bindPhone}
+                    onChange={(e) => setBindPhone(e.target.value)}
+                    placeholder="输入手机号"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">验证码</label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      value={bindPhoneCode}
+                      onChange={(e) => setBindPhoneCode(e.target.value)}
+                      placeholder="输入验证码"
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSendCode(bindPhone, 'phone', 'bind')}
+                      disabled={sendCodeLoading || countdown > 0 || !bindPhone.trim()}
+                    >
+                      {sendCodeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : countdown > 0 ? `${countdown}s` : '发送验证码'}
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={handleBindPhone}
+                    disabled={bindPhoneLoading || !bindPhoneCode.trim()}
+                    className="flex-1"
+                  >
+                    {bindPhoneLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : '绑定'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setBindPhoneOpen(false)
+                      resetBindPhoneState()
+                    }}
+                  >
+                    取消
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

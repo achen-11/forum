@@ -72,6 +72,46 @@ export const authApi = {
     http.post<null>(`${API_BASE}/change-password`, data),
 
   /**
+   * 绑定邮箱
+   */
+  bindEmail: (data: { email: string; verificationCode: string }) =>
+    http.post<UserInfo>(`${API_BASE}/bind-email`, data),
+
+  /**
+   * 绑定手机
+   */
+  bindPhone: (data: { phone: string; verificationCode: string }) =>
+    http.post<UserInfo>(`${API_BASE}/bind-phone`, data),
+
+  /**
+   * 验证旧联系方式（用于更换绑定时的身份验证）
+   */
+  verifyOldContact: (data: { account: string; accountType: 'phone' | 'email'; code: string }) =>
+    http.post<null>(`${API_BASE}/verify-old-contact`, data),
+
+  /**
+   * 更换邮箱
+   */
+  replaceEmail: (data: {
+    oldEmail: string
+    oldCode: string
+    newEmail: string
+    newCode: string
+  }) =>
+    http.post<UserInfo>(`${API_BASE}/replace-email`, data),
+
+  /**
+   * 更换手机
+   */
+  replacePhone: (data: {
+    oldPhone: string
+    oldCode: string
+    newPhone: string
+    newCode: string
+  }) =>
+    http.post<UserInfo>(`${API_BASE}/replace-phone`, data),
+
+  /**
    * 关注用户
    */
   follow: (followingId: string) =>
