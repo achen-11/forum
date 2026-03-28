@@ -3,6 +3,16 @@ import { persist } from 'zustand/middleware'
 import { authApi } from '@/api/auth'
 import type { LoginRequest, UserInfo } from '@/types/auth'
 
+/**
+ * 获取 cookie 值
+ */
+function getCookie(name: string): string | null {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null
+  return null
+}
+
 interface AuthState {
   user: UserInfo | null
   token: string | null
@@ -18,6 +28,7 @@ interface AuthState {
   bindPhone: (phone: string, verificationCode: string) => Promise<UserInfo>
   replaceEmail: (oldEmail: string, oldCode: string, newEmail: string, newCode: string) => Promise<UserInfo>
   replacePhone: (oldPhone: string, oldCode: string, newPhone: string, newCode: string) => Promise<UserInfo>
+  koobooLogin: () => Promise<boolean>
   clearError: () => void
   register: (data: {
     userName?: string
@@ -75,7 +86,15 @@ export const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: async () => {
-        const { token } = get()
+        let { token } = get()
+        // 如果 zustand store 中没有 token，尝试从 cookie 获取
+        if (!token) {
+          const cookieToken = getCookie('forum_auth_token')
+          if (cookieToken) {
+            token = cookieToken
+            set({ token })
+          }
+        }
         if (!token) return
 
         set({ isLoading: true })
@@ -120,6 +139,25 @@ export const useAuthStore = create<AuthState>()(
         const user = await authApi.replacePhone({ oldPhone, oldCode, newPhone, newCode })
         set({ user })
         return user
+      },
+
+      koobooLogin: async () => {
+        set({ isLoading: true, error: null })
+        try {
+          const res = await authApi.koobooLogin()
+          set({
+            token: res.token,
+            isAuthenticated: true,
+            isLoading: false,
+          })
+          const fullUser = await authApi.getCurrentUser()
+          set({ user: fullUser })
+          return true
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : 'Kooboo 登录失败'
+          set({ error: message, isLoading: false })
+          return false
+        }
       },
 
       clearError: () => set({ error: null }),

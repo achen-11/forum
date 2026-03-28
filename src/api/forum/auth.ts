@@ -1,6 +1,6 @@
 // @k-url /api/forum/auth/{action}
 
-import { login, logout, sendVerificationCode, verifyVerificationCode, register, resetPassword, getCurrentUser, getUserDetail, updateProfile, changePassword, bindEmail, bindPhone, verifyOldContact, replaceEmail, replacePhone } from "code/Services/auth";
+import { login, logout, sendVerificationCode, verifyVerificationCode, register, resetPassword, getCurrentUser, getUserDetail, updateProfile, changePassword, bindEmail, bindPhone, verifyOldContact, replaceEmail, replacePhone, koobooLogin, koobooBindCheck, koobooUnbind } from "code/Services/auth";
 import { followUser, unfollowUser, getUserFollowersCount, getUserFollowingCount, isFollowing, getUserComments } from "code/Services/ForumUserService";
 import { successResponse, failResponse } from "code/Utils/ResponseUtils";
 
@@ -23,6 +23,49 @@ k.api.post('login', (body: {
       loginMode: body.loginMode ?? 'password',
       isRemember: body.isRemember
     });
+    return successResponse(data);
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+/**
+ * Kooboo 登录
+ * 从 Kooboo 登录页返回后调用
+ */
+k.api.post('kooboo-login', () => {
+  try {
+    const data = koobooLogin();
+    return successResponse(data);
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * Kooboo 绑定检查
+ * 需登录，检测当前 Kooboo 账号是否已绑定其他用户
+ */
+k.api.get('kooboo-bind-check', () => {
+  try {
+    const data = koobooBindCheck();
+    return successResponse(data);
+  } catch (e: any) {
+    return failResponse(e?.message || '服务器错误');
+  }
+});
+
+/**
+ * Kooboo 解绑
+ * 需登录，输入密码确认，解绑前检查是否有手机或邮箱
+ */
+k.api.post('kooboo-unbind', (body: {
+  password?: string;
+}) => {
+  try {
+    if (!body.password) {
+      return failResponse('请输入密码');
+    }
+    const data = koobooUnbind(body.password);
     return successResponse(data);
   } catch (e: any) {
     return failResponse(e?.message || '服务器错误');
@@ -122,6 +165,11 @@ k.api.post('reset-password', (body: {
  */
 k.api.post('logout', () => {
   try {
+    // 检查用户是否有 koobooId，如果有则登出 Kooboo
+    const currentUser = getCurrentUser();
+    if (currentUser?.koobooId && k.account.isLogin) {
+      k.account.user.logout();
+    }
     logout();
     return successResponse(null, '已退出');
   } catch (e: any) {

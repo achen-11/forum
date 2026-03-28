@@ -146,4 +146,25 @@ export const authApi = {
    */
   getUserComments: (userId: string, limit: number = 20) =>
     http.get<UserComment[]>(`${API_BASE}/user-comments?userId=${userId}&limit=${limit}`),
+
+  /**
+   * Kooboo 登录
+   * 从 Kooboo 登录页返回后调用
+   */
+  koobooLogin: () =>
+    http.post<LoginResponse>(`${API_BASE}/kooboo-login`, {}),
+
+  /**
+   * Kooboo 绑定检查
+   * 绑定 Kooboo 账号到当前登录用户
+   */
+  koobooBindCheck: () =>
+    http.get<{ message: string; isBound: boolean }>(`${API_BASE}/kooboo-bind-check`),
+
+  /**
+   * Kooboo 解绑
+   * 解绑 Kooboo 账号（需验证密码）
+   */
+  koobooUnbind: (password: string) =>
+    http.post<{ message: string }>(`${API_BASE}/kooboo-unbind`, { password }),
 }

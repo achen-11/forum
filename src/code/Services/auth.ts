@@ -488,6 +488,7 @@ export function getCurrentUser() {
         email: user.email || '',
         avatar: user.avatar || '',
         role: user.role || 'user',
+        koobooId: user.koobooId || '',
         createdAt: user.createdAt,
         lastLoginAt: user.lastLoginAt
     }
@@ -510,6 +511,7 @@ export function getUserDetail(userId: string) {
         email: user.email || '',
         avatar: user.avatar || '',
         role: user.role || 'user',
+        koobooId: user.koobooId || '',
         createdAt: user.createdAt,
         lastLoginAt: user.lastLoginAt
     }
@@ -845,4 +847,155 @@ export function replacePhone(
     if (!updated) throw new Error('更换手机失败')
 
     return getUserDetail(user._id)
+}
+
+/**
+ * Kooboo 登录
+ * 从 Kooboo 登录页返回后调用
+ * 检查 k.account.isLogin，获取用户信息，查找或创建 Forum_User
+ */
+export function koobooLogin() {
+    // 检查 Kooboo 是否已登录
+    if (!k.account.isLogin) {
+        throw new Error('请先登录 Kooboo')
+    }
+
+    const koobooUser = k.account.user.current
+    if (!koobooUser || !koobooUser.userName) {
+        throw new Error('无法获取 Kooboo 用户信息')
+    }
+
+    const koobooId = koobooUser.userName
+
+    // 查找是否已绑定
+    let user = Forum_User.findOne({ koobooId } as any) as any
+    if (user && user._id) {
+        // 已存在，更新最后登录时间
+        Forum_User.updateById(user._id, { lastLoginAt: Date.now() } as any)
+    } else {
+        // 不存在，自动创建用户
+        const createData: any = {
+            userName: `kooboo_${koobooId}`,
+            displayName: koobooUser.firstName || koobooUser.lastName || koobooId,
+            password: k.security.md5(Date.now().toString() + Math.random().toString()), // 随机密码
+            koobooId: koobooId,
+        }
+
+        // 如果 Kooboo 用户有 email 或 phone，一并填入
+        if (koobooUser.email) {
+            createData.email = koobooUser.email
+        }
+        if (koobooUser.phone) {
+            createData.phone = koobooUser.phone
+        }
+
+        const id = Forum_User.create(createData)
+        user = Forum_User.findById(id) as any
+        if (!user || !user._id) {
+            throw new Error('创建用户失败，请稍后重试')
+        }
+    }
+
+    return issueToken(user, false)
+}
+
+/**
+ * Kooboo 绑定检查
+ * 需登录，检测当前 Kooboo 账号是否已绑定其他用户
+ */
+export function koobooBindCheck() {
+    const currentUser = getCurrentUser()
+    if (!currentUser || !currentUser._id) {
+        throw new Error('请先登录论坛账号')
+    }
+
+    if (!k.account.isLogin) {
+        throw new Error('请先登录 Kooboo')
+    }
+
+    const koobooUser = k.account.user.current
+    if (!koobooUser || !koobooUser.userName) {
+        throw new Error('无法获取 Kooboo 用户信息')
+    }
+
+    const koobooId = koobooUser.userName
+
+    // 检查是否已被其他用户绑定
+    const existing = Forum_User.findOne({ koobooId } as any) as any
+    if (existing && existing._id !== currentUser._id) {
+        throw new Error('该 Kooboo 账号已绑定其他用户')
+    }
+
+    // 如果当前用户已经有 koobooId 且与当前不一致，报错
+    if (currentUser.koobooId && currentUser.koobooId !== koobooId) {
+        throw new Error('当前账号已绑定其他 Kooboo 账号，请先解绑')
+    }
+
+    // 已经绑定过了，直接返回成功
+    if (currentUser.koobooId === koobooId) {
+        return {
+            message: '已绑定',
+            isBound: true
+        }
+    }
+
+    // 执行绑定
+    const updated = Forum_User.updateById(currentUser._id, {
+        koobooId: koobooId
+    } as any)
+    if (!updated) {
+        throw new Error('绑定失败')
+    }
+
+    return {
+        message: '绑定成功',
+        isBound: true
+    }
+}
+
+/**
+ * Kooboo 解绑
+ * 需登录，解绑前验证密码确保是本人操作
+ */
+export function koobooUnbind(password: string) {
+    const currentUser = getCurrentUser()
+    if (!currentUser || !currentUser._id) {
+        throw new Error('请先登录')
+    }
+
+    if (!currentUser.koobooId) {
+        throw new Error('当前账号未绑定 Kooboo')
+    }
+
+    // 检查是否有手机或邮箱作为备用登录方式
+    if (!currentUser.phone && !currentUser.email) {
+        throw new Error('解绑前请先绑定手机号或邮箱，以便后续登录')
+    }
+
+    // 验证密码
+    if (!password?.trim()) {
+        throw new Error('请输入密码')
+    }
+
+    const dbUser = Forum_User.findById(currentUser._id) as any
+    if (!dbUser || !dbUser._id) {
+        throw new Error('用户不存在')
+    }
+
+    const md5Password = k.security.md5(password.trim())
+    if (dbUser.password !== md5Password) {
+        throw new Error('密码错误')
+    }
+
+    // 解绑：清空 koobooId
+    const updated = Forum_User.updateById(currentUser._id, {
+        koobooId: ''
+    } as any)
+    if (!updated) {
+        throw new Error('解绑失败')
+    }
+
+    return {
+        message: '解绑成功'
+    }
 }

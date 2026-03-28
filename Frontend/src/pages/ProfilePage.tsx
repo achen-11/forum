@@ -98,6 +98,11 @@ export default function ProfilePage() {
   const [newPhoneCode, setNewPhoneCode] = useState('')
   const [bindPhoneLoading, setBindPhoneLoading] = useState(false)
 
+  // Kooboo unbind modal state
+  const [koobooUnbindOpen, setKoobooUnbindOpen] = useState(false)
+  const [koobooUnbindPassword, setKoobooUnbindPassword] = useState('')
+  const [koobooUnbindLoading, setKoobooUnbindLoading] = useState(false)
+
 
   // Saved posts state
   const [savedLoading, setSavedLoading] = useState(false)
@@ -213,6 +218,28 @@ export default function ProfilePage() {
       toast.error(err instanceof Error ? err.message : '修改失败')
     } finally {
       setPasswordLoading(false)
+    }
+  }
+
+  // Handle Kooboo unbind
+  const handleSubmitKoobooUnbind = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!koobooUnbindPassword.trim()) {
+      toast.error('请输入密码')
+      return
+    }
+    setKoobooUnbindLoading(true)
+    try {
+      await authApi.koobooUnbind(koobooUnbindPassword.trim())
+      toast.success('解绑成功')
+      setKoobooUnbindOpen(false)
+      setKoobooUnbindPassword('')
+      // 刷新用户信息
+      await useAuthStore.getState().checkAuth()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '解绑失败')
+    } finally {
+      setKoobooUnbindLoading(false)
     }
   }
 
@@ -637,6 +664,26 @@ export default function ProfilePage() {
                   className="w-full text-left flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   <span className="text-sm font-medium">修改密码</span>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
+
+                {/* Bind / Replace Kooboo */}
+                <button
+                  onClick={() => {
+                    if (user.koobooId) {
+                      // 已绑定：打开解绑确认弹窗
+                      setKoobooUnbindOpen(true)
+                    } else {
+                      // 未绑定：跳转到 Kooboo 登录绑定
+                      window.location.href = '/_Admin/login?returnurl=/__kbAuthCallback?type=koobooBind'
+                    }
+                  }}
+                  className="w-full text-left flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <img src="/kooboo-logo.png" alt="" className="w-4 h-4" />
+                    <span className="text-sm font-medium">Kooboo {user.koobooId ? '已绑定' : '未绑定'}</span>
+                  </div>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </button>
               </div>
@@ -1468,6 +1515,65 @@ export default function ProfilePage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Kooboo Unbind Modal */}
+      {koobooUnbindOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">解绑 Kooboo</h2>
+              <button
+                onClick={() => {
+                  setKoobooUnbindOpen(false)
+                  setKoobooUnbindPassword('')
+                }}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitKoobooUnbind} className="space-y-4">
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  解绑后您需要使用手机号或邮箱登录，请确保已绑定手机号或邮箱。
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">当前密码</label>
+                <Input
+                  type="password"
+                  value={koobooUnbindPassword}
+                  onChange={(e) => setKoobooUnbindPassword(e.target.value)}
+                  placeholder="输入密码确认解绑"
+                  className="mt-1"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button type="submit" disabled={koobooUnbindLoading} className="flex-1">
+                  {koobooUnbindLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    '确认解绑'
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setKoobooUnbindOpen(false)
+                    setKoobooUnbindPassword('')
+                  }}
+                >
+                  取消
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

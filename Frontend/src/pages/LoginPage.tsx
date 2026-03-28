@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,7 @@ type AccountType = 'username' | 'phone' | 'email'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { login, register, isLoading, error, clearError } = useAuthStore()
+  const { login, register, isLoading, error, clearError, checkAuth, isAuthenticated, token } = useAuthStore()
 
   const [pageMode, setPageMode] = useState<PageMode>('login')
   const [loginMode, setLoginMode] = useState<LoginMode>('password')
@@ -28,6 +28,25 @@ export default function LoginPage() {
   const [resetSuccess, setResetSuccess] = useState(false)
   const [isRemember, setIsRemember] = useState(false)
 
+  // 检查是否已登录，已登录则跳转到首页
+  useEffect(() => {
+    const verifyAndRedirect = async () => {
+      // 如果 zustand 已有 token，直接验证
+      if (token || isAuthenticated) {
+        navigate('/')
+        return
+      }
+      // 如果没有 token，尝试从 cookie 读取并验证
+      await checkAuth()
+      // checkAuth 完成后，再次检查 isAuthenticated
+      if (useAuthStore.getState().isAuthenticated) {
+        navigate('/')
+      }
+    }
+    verifyAndRedirect()
+  }, [])
+
+  // 检查 kooboo_error cookie 并显示错误
   const isPhoneOrEmail = accountType === 'phone' || accountType === 'email'
 
   const handleSendCode = useCallback(async () => {
@@ -530,6 +549,32 @@ export default function LoginPage() {
                     : (pageMode === 'login' ? '登录' : pageMode === 'register' ? '注册' : '重置密码')
                   }
                 </Button>
+
+                {/* Kooboo 登录按钮 - 仅登录页显示 */}
+                {pageMode === 'login' && (
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-200" />
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">或</span>
+                    </div>
+                  </div>
+                )}
+
+                {pageMode === 'login' && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-11"
+                    onClick={() => {
+                      window.location.href = '/_Admin/login?returnurl=/__kbAuthCallback?type=koobooLogin'
+                    }}
+                  >
+                    <img src="/kooboo-logo.png" alt="" className="w-5 h-5 mr-2" />
+                    Kooboo 登录
+                  </Button>
+                )}
 
                 {/* 底部切换 */}
                 {pageMode !== 'forgot' && (

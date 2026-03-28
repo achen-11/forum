@@ -44,6 +44,7 @@ export interface UserInfo {
   email: string
   avatar: string
   role: string
+  koobooId: string
   createdAt: number
   lastLoginAt: number
 }
