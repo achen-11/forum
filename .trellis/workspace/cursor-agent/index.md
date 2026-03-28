@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 16
+- **Total Sessions**: 17
 - **Last Active**: 2026-03-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~713 | Active |
+| `journal-1.md` | ~745 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 17 | 2026-03-28 | Kooboo 登录接入 | `4949696` |
 | 16 | 2026-03-28 | profile 绑定邮箱和手机功能完成 | `d9eff3b` |
 | 15 | 2026-03-26 | 移除 Models 外键约束 ref | `4b01346` |
 | 14 | 2026-03-26 | 帖子 Markdown 源码双字段存储 | `2fc092b` |
