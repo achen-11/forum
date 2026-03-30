@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/UserAvatar'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Header } from '@/components/Header'
@@ -120,7 +120,6 @@ export default function UserProfilePage() {
     )
   }
 
-  const hasAvatar = user.avatar && user.avatar.trim() !== ''
   const displayName = user.displayName || user.userName || '用户'
   const postsCount = posts.length
 
@@ -152,14 +151,7 @@ export default function UserProfilePage() {
             <div className="flex flex-col md:flex-row gap-6 items-start">
               {/* Avatar with online status */}
               <div className="relative shrink-0">
-                <Avatar className="w-32 h-32 rounded-xl">
-                  {hasAvatar ? (
-                    <AvatarImage src={user.avatar} alt={displayName} />
-                  ) : null}
-                  <AvatarFallback className="bg-primary/10 text-primary text-4xl font-bold rounded-xl">
-                    {displayName.slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar user={user} size="2xl" />
                 {/* Online status dot */}
                 <div className="absolute -bottom-1 -right-1 bg-green-500 h-5 w-5 rounded-full border-4 border-white dark:border-slate-950" />
               </div>

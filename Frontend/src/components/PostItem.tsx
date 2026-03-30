@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { MessageCircle, Heart, Pin, Bookmark, CheckCircle } from 'lucide-react'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/UserAvatar'
 import type { Post } from '@/types/post'
 
 interface PostItemProps {
@@ -34,14 +34,7 @@ export function PostItem({ post, onClick }: PostItemProps) {
       <div className="flex gap-4">
         {/* 左侧：作者头像 */}
         <div className="shrink-0">
-          <Avatar className="w-10 h-10">
-            {post.author?.avatar ? (
-              <AvatarImage src={post.author.avatar} alt="" />
-            ) : null}
-            <AvatarFallback className="bg-slate-200 text-slate-600">
-              {(post.author?.userName || post.author?.displayName || '?').slice(0, 1).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar user={post.author ?? {}} size="md" />
         </div>
 
         {/* 右侧：上下布局 */}

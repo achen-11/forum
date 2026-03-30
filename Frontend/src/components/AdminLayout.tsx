@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/sidebar'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/authStore'
+import { UserAvatar } from '@/components/UserAvatar'
 import {
   ChevronDown,
   Crown,
@@ -137,11 +138,7 @@ function AdminSidebar() {
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-sidebar-accent transition-colors"
             >
-              <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-indigo-600 text-sm font-medium">
-                  {(user?.displayName || user?.userName || '?').slice(0, 1).toUpperCase()}
-                </span>
-              </div>
+              <UserAvatar user={user ?? {}} size="sm" />
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm font-medium text-sidebar-foreground truncate">
                   {user?.displayName || user?.userName || '用户'}

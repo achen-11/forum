@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/UserAvatar'
 import { useAuthStore } from '@/stores/authStore'
 import { useNotificationStore } from '@/stores/notificationStore'
 import { useNotificationSocket } from '@/hooks/useNotificationSocket'
@@ -245,14 +245,7 @@ export function Header({ onShowAllNotifications }: HeaderProps) {
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center gap-1 hover:bg-slate-100 rounded-lg p-1"
             >
-              <Avatar className="w-8 h-8">
-                {user?.avatar ? (
-                  <AvatarImage src={user.avatar} alt="" />
-                ) : null}
-                <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm">
-                  {(user?.displayName || user?.userName || '?').slice(0, 1).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar user={user ?? {}} size="sm" />
               <ChevronDown className="w-4 h-4 text-slate-400" />
             </button>
 

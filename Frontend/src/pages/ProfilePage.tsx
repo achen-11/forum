@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/UserAvatar'
 import { Header } from '@/components/Header'
 import { useAuthStore } from '@/stores/authStore'
 import { authApi } from '@/api/auth'
@@ -555,14 +555,15 @@ export default function ProfilePage() {
                 <div className="relative flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 mb-4">
                   {/* Avatar */}
                   <div className="relative group">
-                    <div className="w-24 h-24 rounded-2xl border-4 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 overflow-hidden shadow-lg">
-                      {(avatarPreview || user.avatar) ? (
-                        <img src={avatarPreview || user.avatar} alt={displayName} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary text-3xl font-bold">
-                          {displayName.slice(0, 2)}
-                        </div>
-                      )}
+                    <div className="rounded-2xl border-4 border-white dark:border-slate-900 shadow-lg">
+                      <UserAvatar
+                        user={{
+                          ...user,
+                          avatar: avatarPreview || user.avatar
+                        }}
+                        size="xl"
+                        shape="square"
+                      />
                     </div>
                     <button
                       onClick={() => fileInputRef.current?.click()}
@@ -996,14 +997,13 @@ export default function ProfilePage() {
               <div>
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">头像</label>
                 <div className="mt-1 flex items-center gap-4">
-                  <Avatar className="w-20 h-20">
-                    {avatarPreview || editAvatar ? (
-                      <AvatarImage src={avatarPreview || editAvatar} alt="" />
-                    ) : null}
-                    <AvatarFallback className="bg-slate-200 text-slate-600 text-xl">
-                      {displayName.slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    user={{
+                      ...user,
+                      avatar: avatarPreview || editAvatar || user.avatar
+                    }}
+                    size="lg"
+                  />
                   <div className="flex flex-col gap-2">
                     <input
                       ref={fileInputRef}

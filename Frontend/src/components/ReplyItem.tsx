@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, ThumbsUp } from 'lucide-react'
 import type { Reply } from '@/types/post'
@@ -36,9 +36,6 @@ const formatTime = (time: string) => {
   return date.toLocaleDateString('zh-CN')
 }
 
-// 获取名字首字母
-const getInitials = (name?: string) => name?.slice(0, 2).toUpperCase() || '?'
-
 export function ReplyItem({
   reply,
   rootReplyId,
@@ -62,20 +59,10 @@ export function ReplyItem({
       {/* 头像 */}
       {reply.author?._id ? (
         <Link to={`/user/${reply.author._id}`} className="shrink-0">
-          <Avatar className="w-8 h-8 hover:opacity-80">
-            {reply.author?.avatar ? <AvatarImage src={reply.author.avatar} alt="" /> : null}
-            <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm">
-              {getInitials(reply.author?.displayName || reply.author?.userName)}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar user={reply.author ?? {}} size="sm" />
         </Link>
       ) : (
-        <Avatar className="w-8 h-8 shrink-0">
-          {reply.author?.avatar ? <AvatarImage src={reply.author.avatar} alt="" /> : null}
-          <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm">
-            {getInitials(reply.author?.displayName || reply.author?.userName)}
-          </AvatarFallback>
-        </Avatar>
+        <UserAvatar user={reply.author ?? {}} size="sm" />
       )}
 
       <div className="flex-1 min-w-0">

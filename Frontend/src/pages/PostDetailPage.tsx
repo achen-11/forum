@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { UserAvatar } from '@/components/UserAvatar'
 import { postApi } from '@/api/post'
 import type { Post, Reply } from '@/types/post'
 import { ArrowLeft, Eye, MessageCircle, Clock, ArrowUpDown, Heart, Bookmark, Share2, ChevronRight, Users, BookOpen, Shield, Trash2, Edit, CheckCircle } from 'lucide-react'
@@ -350,12 +350,7 @@ export default function PostDetailPage() {
     return date.toLocaleDateString('zh-CN')
   }
 
-  // 获取用户头像 initials
-  const getInitials = (name?: string) => {
-    if (!name) return '?'
-    return name.slice(0, 2).toUpperCase()
-  }
-
+  
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -466,14 +461,7 @@ export default function PostDetailPage() {
                 <div className="flex items-center gap-3">
                   {post.author?._id ? (
                     <Link to={`/user/${post.author._id}`} className="flex items-center gap-3 hover:opacity-80">
-                      <Avatar className="w-10 h-10">
-                        {post.author?.avatar ? (
-                          <AvatarImage src={post.author.avatar} alt="" />
-                        ) : null}
-                        <AvatarFallback className="bg-indigo-100 text-indigo-600">
-                          {getInitials(post.author?.displayName || post.author?.userName)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar user={post.author ?? {}} size="md" />
                       <div>
                         <div className="font-medium text-slate-900 flex items-center gap-2">
                           {post.author?.displayName || post.author?.userName || '未知用户'}
@@ -492,14 +480,7 @@ export default function PostDetailPage() {
                     </Link>
                   ) : (
                     <>
-                      <Avatar className="w-10 h-10">
-                        {post.author?.avatar ? (
-                          <AvatarImage src={post.author.avatar} alt="" />
-                        ) : null}
-                        <AvatarFallback className="bg-indigo-100 text-indigo-600">
-                          {getInitials(post.author?.displayName || post.author?.userName)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar user={post.author ?? {}} size="md" />
                       <div>
                         <div className="font-medium text-slate-900 flex items-center gap-2">
                           {post.author?.displayName || post.author?.userName || '未知用户'}
@@ -658,28 +639,14 @@ export default function PostDetailPage() {
               <div className="flex flex-col items-center text-center">
                 {post.author?._id ? (
                   <Link to={`/user/${post.author._id}`} className="hover:opacity-80">
-                    <Avatar className="w-16 h-16 mb-3">
-                      {post.author?.avatar ? (
-                        <AvatarImage src={post.author.avatar} alt="" />
-                      ) : null}
-                      <AvatarFallback className="bg-indigo-100 text-indigo-600 text-xl">
-                        {getInitials(post.author?.displayName || post.author?.userName)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar user={post.author ?? {}} size="lg" />
                     <div className="font-medium text-slate-900 mb-1 hover:text-primary">
                       {post.author?.displayName || post.author?.userName || '未知用户'}
                     </div>
                   </Link>
                 ) : (
                   <>
-                    <Avatar className="w-16 h-16 mb-3">
-                      {post.author?.avatar ? (
-                        <AvatarImage src={post.author.avatar} alt="" />
-                      ) : null}
-                      <AvatarFallback className="bg-indigo-100 text-indigo-600 text-xl">
-                        {getInitials(post.author?.displayName || post.author?.userName)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar user={post.author ?? {}} size="lg" />
                     <div className="font-medium text-slate-900 mb-1">
                       {post.author?.displayName || post.author?.userName || '未知用户'}
                     </div>

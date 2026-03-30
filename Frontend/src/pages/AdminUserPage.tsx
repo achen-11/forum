@@ -9,6 +9,7 @@ import { AdminTable } from '@/components/AdminTable'
 import { adminUserApi } from '@/api/admin_user'
 import { useAuthStore } from '@/stores/authStore'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { UserAvatar } from '@/components/UserAvatar'
 import {
   Crown,
   Shield,
@@ -158,15 +159,7 @@ export default function AdminUserPage() {
       header: '用户',
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-            {row.original.avatar ? (
-              <img src={row.original.avatar} alt="" className="w-full h-full rounded-full" />
-            ) : (
-              <span className="text-indigo-600 font-semibold text-sm">
-                {(row.original.displayName || row.original.userName || '?').slice(0, 1).toUpperCase()}
-              </span>
-            )}
-          </div>
+          <UserAvatar user={row.original} size="sm" />
           <div>
             <div className="flex items-center gap-2">
               <span className="font-medium">{row.original.displayName || row.original.userName}</span>

@@ -32,7 +32,7 @@ const formatTime = (timestamp: number) => {
 }
 
 // 获取名字首字母
-const getInitials = (name?: string) => name?.slice(0, 2).toUpperCase() || '?'
+const getInitials = (name?: string) => name?.slice(0, 1).toUpperCase() || '?'
 
 // 获取通知图标
 const getNotificationIcon = (type: NotificationItem['type']) => {

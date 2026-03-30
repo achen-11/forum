@@ -5,6 +5,7 @@ import { usePostStore } from '@/stores/postStore'
 import { postApi } from '@/api/post'
 import { HomeSidebar } from '@/components/HomeSidebar'
 import { Header } from '@/components/Header'
+import { UserAvatar } from '@/components/UserAvatar'
 import { Plus, X, Search, Hash, Folder } from 'lucide-react'
 import type { Post, SearchPagination } from '@/types/post'
 
@@ -33,11 +34,7 @@ function SearchPostItem({ post, onClick }: { post: Post; onClick: () => void }) 
     >
       <div className="flex gap-4">
         <div className="shrink-0">
-          <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
-            <span className="text-slate-600 font-medium">
-              {(post.author?.displayName || post.author?.userName || '?').slice(0, 1).toUpperCase()}
-            </span>
-          </div>
+          <UserAvatar user={post.author ?? {}} size="md" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
