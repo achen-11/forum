@@ -743,3 +743,35 @@ Created and documented a new OpenClaw forum API skill with login-session auth st
 ### Next Steps
 
 - None - task complete
+
+
+## Session 18: 统一头像显示逻辑
+
+**Date**: 2026-03-30
+**Task**: 统一头像显示逻辑
+
+### Summary
+
+创建 UserAvatar 组件统一所有页面的头像显示逻辑，支持 size 和 shape 配置，Fallback 优先级：头像 → displayName[0] → userName[0] → email[0] → phone[0] → '?'，背景色改为 #E1E7FD
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `64da0ee` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
