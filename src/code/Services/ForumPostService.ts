@@ -110,6 +110,7 @@ export class ForumPostService {
             _id: string
             title: string
             content: string
+            markdownContent: string
             summary: string
             authorId: string
             categoryId: string
@@ -132,6 +133,7 @@ export class ForumPostService {
             _id: post._id,
             title: post.title,
             content: post.content,
+            markdownContent: post.markdownContent,
             summary: post.summary,
             viewCount: post.viewCount,
             replyCount: post.replyCount,

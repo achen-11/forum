@@ -775,3 +775,57 @@ Created and documented a new OpenClaw forum API skill with login-session auth st
 ### Next Steps
 
 - None - task complete
+
+
+## Session 19: Markdown 渲染引擎优化
+
+**Date**: 2026-03-31
+**Task**: Markdown 渲染引擎优化
+
+### Summary
+
+优化站点 Markdown 渲染引擎：
+
+**功能实现**：
+- 代码高亮：shiki (github-dark 主题)，按需加载
+- 容器语法：::: tip/warning/danger/info (VitePress 风格)
+- 行内代码：背景灰色 + 红色文字 (#DA615C)
+- 代码块：语言标签 + 复制按钮 (hover 显示)
+- 图片：点击全屏预览
+- Todo 列表：disabled checkbox
+
+**技术变更**：
+- 新增 shiki, markdown-it, markdown-it-container, markdown-it-task-checkbox 依赖
+- 新建 Frontend/src/utils/markdown.ts 统一渲染工具
+- 统一 SplitEditor 和 PostDetailPage 的渲染逻辑
+- 后端 ForumPostService.getPostList 返回 markdownContent 字段
+
+**文件变更**：
+- Frontend/package.json
+- Frontend/src/utils/markdown.ts (新建)
+- Frontend/src/components/SplitEditor.tsx
+- Frontend/src/pages/PostDetailPage.tsx
+- Frontend/src/types/markdown-it-*.d.ts (新建)
+- src/code/Services/ForumPostService.ts
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b7e9a39` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

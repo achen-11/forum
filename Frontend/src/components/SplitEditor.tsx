@@ -1,10 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import rehypeHighlight from 'rehype-highlight'
 import { GripVertical } from 'lucide-react'
 import { postApi } from '@/api/post'
-import 'highlight.js/styles/github.css'
+import { renderMarkdownAsync, preloadHighlighter, COPY_CODE_SCRIPT, MARKDOWN_CSS } from '@/utils/markdown'
 
 interface SplitEditorProps {
   value: string
@@ -14,7 +11,9 @@ interface SplitEditorProps {
 export function SplitEditor({ value, onChange }: SplitEditorProps) {
   const [splitRatio, setSplitRatio] = useState(50) // percentage for left side
   const [isDragging, setIsDragging] = useState(false)
+  const [previewHtml, setPreviewHtml] = useState('<p class="text-slate-400 italic">预览区域</p>')
   const containerRef = useRef<HTMLDivElement>(null)
+  const isMountedRef = useRef(true)
 
   // Handle drag to resize
   const handleMouseDown = useCallback(() => {
@@ -46,6 +45,48 @@ export function SplitEditor({ value, onChange }: SplitEditorProps) {
       document.removeEventListener('mouseup', handleMouseUp)
     }
   }, [isDragging, handleMouseMove, handleMouseUp])
+
+  // Preload highlighter on mount
+  useEffect(() => {
+    preloadHighlighter()
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  // Inject markdown styles and scripts
+  useEffect(() => {
+    const styleId = 'markdown-styles-split'
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style')
+      style.id = styleId
+      style.textContent = MARKDOWN_CSS
+      document.head.appendChild(style)
+    }
+
+    const scriptId = 'markdown-scripts-split'
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script')
+      script.id = scriptId
+      script.textContent = COPY_CODE_SCRIPT.replace(/<\/?script>/g, '')
+      document.body.appendChild(script)
+    }
+  }, [])
+
+  // Async render markdown with shiki highlighting
+  useEffect(() => {
+    if (!value) {
+      setPreviewHtml('<p class="text-slate-400 italic">预览区域</p>')
+      return
+    }
+
+    renderMarkdownAsync(value).then((html) => {
+      if (isMountedRef.current) {
+        setPreviewHtml(html)
+      }
+    })
+  }, [value])
 
   // Handle paste - detect markdown and image
   const handlePaste = useCallback(
@@ -151,45 +192,10 @@ export function SplitEditor({ value, onChange }: SplitEditorProps) {
         <div
           className="prose prose-sm sm:prose-base lg:prose-lg max-w-none p-4 overflow-auto flex-1"
           style={{ width: `${100 - splitRatio}%` }}
-        >
-            {value ? (
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeHighlight]}
-                components={{
-                  // Custom image rendering to handle base64
-                  img: ({ ...props }) => (
-                    <img
-                      {...props}
-                      className="max-w-full h-auto rounded-lg"
-                      loading="lazy"
-                    />
-                  ),
-                  // Code block styling
-                  code: ({ className, children, ...props }) => {
-                    const match = /language-(\w+)/.exec(className || '')
-                    const isInline = !match
-                    return isInline ? (
-                      <code
-                        className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-800 text-sm"
-                        {...props}
-                      >
-                        {children}
-                      </code>
-                    ) : (
-                      <code className={className} {...props}>
-                        {children}
-                      </code>
-                    )
-                  },
-                }}
-              >
-                {value}
-              </ReactMarkdown>
-            ) : (
-              <p className="text-slate-400 italic">预览区域</p>
-            )}
-          </div>
+          dangerouslySetInnerHTML={{
+            __html: previewHtml
+          }}
+        />
       </div>
     </div>
   )

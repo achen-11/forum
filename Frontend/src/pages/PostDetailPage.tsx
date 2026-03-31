@@ -13,6 +13,7 @@ import { PostFormDrawer } from '@/components/CreatePostDrawer'
 import { ReplyItem } from '@/components/ReplyItem'
 import { useAuthStore } from '@/stores/authStore'
 import { toast } from '@/lib/toast'
+import { renderMarkdownAsync, preloadHighlighter, COPY_CODE_SCRIPT, MARKDOWN_CSS } from '@/utils/markdown'
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -31,6 +32,10 @@ export default function PostDetailPage() {
   // 嵌套回复抽屉状态
   const [nestedReplyDrawerOpen, setNestedReplyDrawerOpen] = useState(false)
   const [replyingToReply, setReplyingToReply] = useState<{ parentId: string; replyToName: string } | null>(null)
+
+  // 渲染后的帖子内容
+  const [renderedContent, setRenderedContent] = useState('')
+  const renderedContentRef = useRef(renderedContent)
 
   // 编辑帖子抽屉状态
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false)
@@ -102,6 +107,50 @@ export default function PostDetailPage() {
 
     loadData()
   }, [id, sortOrder])
+
+  // 预加载高亮器
+  useEffect(() => {
+    preloadHighlighter()
+  }, [])
+
+  // 注入 markdown 样式和脚本
+  useEffect(() => {
+    // Inject styles
+    const styleId = 'markdown-styles'
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style')
+      style.id = styleId
+      style.textContent = MARKDOWN_CSS
+      document.head.appendChild(style)
+    }
+
+    // Inject script
+    const scriptId = 'markdown-scripts'
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script')
+      script.id = scriptId
+      script.textContent = COPY_CODE_SCRIPT.replace(/<\/?script>/g, '')
+      document.body.appendChild(script)
+    }
+  }, [])
+
+  // 渲染帖子内容（使用 markdownContent）
+  useEffect(() => {
+    if (!post?.markdownContent) {
+      setRenderedContent(post?.content || '')
+      return
+    }
+
+    renderMarkdownAsync(post.markdownContent)
+      .then(html => {
+        renderedContentRef.current = html
+        setRenderedContent(html)
+      })
+      .catch(err => {
+        console.error('渲染失败:', err)
+        setRenderedContent(post?.content || '')
+      })
+  }, [post?.markdownContent, post?.content])
 
   // 点赞/取消点赞
   const handleLike = async () => {
@@ -553,7 +602,7 @@ export default function PostDetailPage() {
               {/* 帖子内容 */}
               <div
                 className="prose prose-slate max-w-none"
-                dangerouslySetInnerHTML={{ __html: post.content }}
+                dangerouslySetInnerHTML={{ __html: renderedContent }}
               />
 
               {/* 底部统计 + 回复按钮 */}
