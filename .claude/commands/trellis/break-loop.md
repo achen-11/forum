@@ -1,125 +1,386 @@
-# Break the Loop - Deep Bug Analysis
+# Break the Loop - Deep Bug Analysis & Systematic Debugging
 
-When debug is complete, use this command for deep analysis to break the "fix bug -> forget -> repeat" cycle.
+调试的真正价值不在于修复这个 bug，而在于让这类 bug 不再发生。
 
----
-
-## Analysis Framework
-
-Analyze the bug you just fixed from these 5 dimensions:
-
-### 1. Root Cause Category
-
-Which category does this bug belong to?
-
-| Category | Characteristics | Example |
-|----------|-----------------|---------|
-| **A. Missing Spec** | No documentation on how to do it | New feature without checklist |
-| **B. Cross-Layer Contract** | Interface between layers unclear | API returns different format than expected |
-| **C. Change Propagation Failure** | Changed one place, missed others | Changed function signature, missed call sites |
-| **D. Test Coverage Gap** | Unit test passes, integration fails | Works alone, breaks when combined |
-| **E. Implicit Assumption** | Code relies on undocumented assumption | Timestamp seconds vs milliseconds |
-
-### 2. Why Fixes Failed (if applicable)
-
-If you tried multiple fixes before succeeding, analyze each failure:
-
-- **Surface Fix**: Fixed symptom, not root cause
-- **Incomplete Scope**: Found root cause, didn't cover all cases
-- **Tool Limitation**: grep missed it, type check wasn't strict
-- **Mental Model**: Kept looking in same layer, didn't think cross-layer
-
-### 3. Prevention Mechanisms
-
-What mechanisms would prevent this from happening again?
-
-| Type | Description | Example |
-|------|-------------|---------|
-| **Documentation** | Write it down so people know | Update thinking guide |
-| **Architecture** | Make the error impossible structurally | Type-safe wrappers |
-| **Compile-time** | TypeScript strict, no any | Signature change causes compile error |
-| **Runtime** | Monitoring, alerts, scans | Detect orphan entities |
-| **Test Coverage** | E2E tests, integration tests | Verify full flow |
-| **Code Review** | Checklist, PR template | "Did you check X?" |
-
-### 4. Systematic Expansion
-
-What broader problems does this bug reveal?
-
-- **Similar Issues**: Where else might this problem exist?
-- **Design Flaw**: Is there a fundamental architecture issue?
-- **Process Flaw**: Is there a development process improvement?
-- **Knowledge Gap**: Is the team missing some understanding?
-
-### 5. Knowledge Capture
-
-Solidify insights into the system:
-
-- [ ] Update `.trellis/spec/guides/` thinking guides
-- [ ] Update `.trellis/spec/backend/` or `frontend/` docs
-- [ ] Create issue record (if applicable)
-- [ ] Create feature ticket for root fix
-- [ ] Update check commands if needed
+本命令融合两个流程：
+1. **修前**：系统化调试流程（先找根因再修）
+2. **修后**：深度复盘分析（防止同类问题）
 
 ---
 
-## Output Format
+## 铁律
 
-Please output analysis in this format:
+```
+未经根因调查，不得尝试修复
+```
+
+随机修复浪费时间和创造新 bug。快速补丁掩盖根本问题。
+
+如果还没完成第一阶段，不得提出修复方案。
+
+---
+
+## Part 1: 系统化调试（修之前）
+
+遇到任何技术问题（测试失败、生产 bug、异常行为、性能问题、构建失败、集成问题）时使用。
+
+**特别适用于：**
+- 时间压力下（紧急情况容易让人猜测）
+- "就一个快速修复"看起来很明显时
+- 已经尝试过多次修复
+- 上一次修复没有生效
+- 不完全理解问题时
+
+**不要跳过当：**
+- 问题看起来很简单（简单 bug 也有根因）
+- 你很着急（匆忙注定返工）
+- 经理想要现在就修好（系统化比猜测更快）
+
+---
+
+### Phase 1: 根因调查
+
+**在尝试任何修复之前：**
+
+1. **仔细阅读错误信息**
+   - 不要跳过错误或警告
+   - 它们通常包含确切的解决方案
+   - 完整阅读堆栈跟踪
+   - 记录行号、文件路径、错误码
+
+2. **稳定复现**
+   - 能可靠地触发吗？
+   - 具体步骤是什么？
+   - 每次都发生吗？
+   - 如果不能复现 → 收集更多数据，不要猜测
+
+3. **检查最近变更**
+   - 什么变更可能导致这个？
+   - Git diff、最近提交
+   - 新依赖、配置变更
+   - 环境差异
+
+4. **多组件系统中的收集证据**
+
+   **当系统有多个组件时（CI → build → signing, API → service → database）：**
+
+   **在提出修复之前，为每个组件边界添加诊断：**
+   ```
+   对于每个组件边界：
+     - 记录进入组件的数据
+     - 记录退出组件的数据
+     - 验证环境/配置传播
+     - 检查每层的状态
+
+   运行一次收集证据，显示在哪里中断
+   然后分析证据识别失败组件
+   然后调查该特定组件
+   ```
+
+   **示例（多层系统）：**
+   ```bash
+   # Layer 1: Workflow
+   echo "=== Secrets available in workflow: ==="
+   echo "IDENTITY: ${IDENTITY:+SET}${IDENTITY:-UNSET}"
+
+   # Layer 2: Build script
+   echo "=== Env vars in build script: ==="
+   env | grep IDENTITY || echo "IDENTITY not in environment"
+
+   # Layer 3: Signing script
+   echo "=== Keychain state: ==="
+   security list-keychains
+   security find-identity -v
+
+   # Layer 4: Actual signing
+   codesign --sign "$IDENTITY" --verbose=4 "$APP"
+   ```
+
+   **这揭示了：** 哪一层失败（secrets → workflow ✓, workflow → build ✗）
+
+5. **追踪数据流**
+
+   **当错误在调用栈深处时：**
+   - 坏值从哪里起源？
+   - 谁调用这个传入了坏值？
+   - 一直追踪到找到源头
+   - 在源头修复，而非症状
+
+---
+
+### Phase 2: 模式分析
+
+**在修复之前找到模式：**
+
+1. **找到工作示例**
+   - 在同一代码库中找到类似工作的代码
+   - 什么类似的东西在工作而什么坏了？
+
+2. **与参考对比**
+   - 如果是实现模式，完整阅读参考实现
+   - 不要略读——每一行都读
+   - 在应用之前完全理解模式
+
+3. **识别差异**
+   - 工作和坏了之间有什么不同？
+   - 列出每一个差异，无论多小
+   - 不要假设"那不可能有关系"
+
+4. **理解依赖**
+   - 这个还需要什么其他组件？
+   - 什么设置、配置、环境？
+   - 它做什么假设？
+
+---
+
+### Phase 3: 假设与测试
+
+**科学方法：**
+
+1. **形成单一假设**
+   - 清楚声明："我认为 X 是根因因为 Y"
+   - 写下来
+   - 要具体，不要模糊
+
+2. **最小化测试**
+   - 做最小的可能改变来测试假设
+   - 一次一个变量
+   - 不要同时修复多个东西
+
+3. **验证后再继续**
+   - 成功了吗？→ Phase 4
+   - 没成功？→ 形成新的假设
+   - 不要在顶部添加更多修复
+
+4. **当你不理解时**
+   - 说"我不理解 X"
+   - 不要假装理解
+   - 请求帮助
+   - 做更多研究
+
+---
+
+### Phase 4: 实现
+
+**修复根因，不是症状：**
+
+1. **创建失败的测试用例**
+   - 最简单的复现
+   - 尽可能自动化测试
+   - 如果没有框架则用一次性测试脚本
+   - 修复前必须有
+
+2. **实现单一修复**
+   - 解决已识别的根因
+   - 一次一个变更
+   - 没有"顺手改进"
+   - 没有捆绑重构
+
+3. **验证修复**
+   - 测试现在通过了吗？
+   - 其他测试没坏吧？
+   - 问题真的解决了吗？
+
+4. **如果修复不生效**
+   - 停
+   - 数一下：你尝试了多少次修复？
+   - 如果 < 3：回到 Phase 1，用新信息重新分析
+   - **如果 ≥ 3：停并质疑架构（见下）**
+   - 没有架构讨论不要尝试修复 #4
+
+5. **如果 3+ 修复失败：质疑架构**
+
+   **表明架构问题的模式：**
+   - 每个修复都在不同地方揭示新的共享状态/耦合/问题
+   - 修复需要"大规模重构"才能实现
+   - 每个修复在其他地方产生新症状
+
+   **停并质疑基础：**
+   - 这个模式根本上是合理的吗？
+   - 我们是在"凭借惯性坚持"吗？
+   - 应该重构架构还是继续修复症状？
+
+   **在尝试更多修复之前与人类伙伴讨论**
+
+---
+
+## Part 2: 深度复盘（修之后）
+
+当调试完成时，用于打破"修 bug -> 忘记 -> 重复"循环。
+
+---
+
+### 5 维度分析框架
+
+从 5 个维度分析你刚修复的 bug：
+
+#### 1. 根因类别
+
+这个 bug 属于哪个类别？
+
+| 类别 | 特征 | 示例 |
+|------|------|------|
+| **A. 规范缺失** | 没有如何做的文档 | 新功能没有检查清单 |
+| **B. 跨层契约** | 层间接口不清晰 | API 返回格式与预期不同 |
+| **C. 变更传播失败** | 改了一处，遗漏其他 | 改函数签名，遗漏调用点 |
+| **D. 测试覆盖缺口** | 单元测试通过，集成失败 | 单独行，一起坏 |
+| **E. 隐式假设** | 代码依赖未文档化的假设 | 时间戳秒 vs 毫秒 |
+
+#### 2. 为什么修复失败（如适用）
+
+如果尝试多次修复才成功，分析每次失败：
+
+- **表面修复**：修复了症状，没修根因
+- **范围不全**：找到根因，没覆盖所有情况
+- **工具局限**：grep 遗漏，类型检查不严格
+- **心智模型**：一直在同一层找，没跨层思考
+
+#### 3. 预防机制
+
+什么机制能防止再次发生？
+
+| 类型 | 描述 | 示例 |
+|------|------|------|
+| **文档** | 写下来让人知道 | 更新思维指南 |
+| **架构** | 从结构上让错误不可能 | 类型安全包装器 |
+| **编译时** | TypeScript strict, no any | 签名变更导致编译错误 |
+| **运行时** | 监控、告警、扫描 | 检测孤儿实体 |
+| **测试覆盖** | E2E 测试、集成测试 | 验证完整流程 |
+| **代码审核** | 检查清单、PR 模板 | "你检查 X 了吗？" |
+
+#### 4. 系统性扩展
+
+这个 bug 揭示了哪些更广泛的问题？
+
+- **类似问题**：这个问题还可能在哪里存在？
+- **设计缺陷**：有根本性的架构问题吗？
+- **流程缺陷**：开发流程有改进空间吗？
+- **知识差距**：团队缺少什么理解？
+
+#### 5. 知识捕获
+
+将洞察固化到系统中：
+
+- [ ] 更新 `.trellis/spec/guides/` 思维指南
+- [ ] 更新 `.trellis/spec/backend/` 或 `frontend/` 文档
+- [ ] 创建 issue 记录（如适用）
+- [ ] 为根因修复创建 feature ticket
+- [ ] 需要时更新检查命令
+
+---
+
+## 输出格式
 
 ```markdown
-## Bug Analysis: [Short Description]
+## Bug 分析：[简短描述]
 
-### 1. Root Cause Category
-- **Category**: [A/B/C/D/E] - [Category Name]
-- **Specific Cause**: [Detailed description]
+### 1. 根因类别
+- **类别**: [A/B/C/D/E] - [类别名称]
+- **具体原因**: [详细描述]
 
-### 2. Why Fixes Failed (if applicable)
-1. [First attempt]: [Why it failed]
-2. [Second attempt]: [Why it failed]
+### 2. 为什么修复失败（如适用）
+1. [第一次尝试]: [为什么失败]
+2. [第二次尝试]: [为什么失败]
 ...
 
-### 3. Prevention Mechanisms
-| Priority | Mechanism | Specific Action | Status |
-|----------|-----------|-----------------|--------|
+### 3. 预防机制
+| 优先级 | 机制 | 具体行动 | 状态 |
+|--------|------|----------|------|
 | P0 | ... | ... | TODO/DONE |
 
-### 4. Systematic Expansion
-- **Similar Issues**: [List places with similar problems]
-- **Design Improvement**: [Architecture-level suggestions]
-- **Process Improvement**: [Development process suggestions]
+### 4. 系统性扩展
+- **类似问题**: [有类似问题的地方]
+- **设计改进**: [架构级建议]
+- **流程改进**: [开发流程建议]
 
-### 5. Knowledge Capture
-- [ ] [Documents to update / tickets to create]
+### 5. 知识捕获
+- [ ] [要更新的文档 / 要创建的任务]
 ```
 
 ---
 
-## Core Philosophy
+## 核心哲学
 
-> **The value of debugging is not in fixing the bug, but in making this class of bugs never happen again.**
+> **调试的价值不在于修复这个 bug，而在于让这类 bug 不再发生。**
 
-Three levels of insight:
-1. **Tactical**: How to fix THIS bug
-2. **Strategic**: How to prevent THIS CLASS of bugs
-3. **Philosophical**: How to expand thinking patterns
+三个层次的洞察：
+1. **战术**：如何修这个 bug
+2. **战略**：如何防止这类 bug
+3. **哲学**：如何扩展思维模式
 
-30 minutes of analysis saves 30 hours of future debugging.
+30 分钟分析节省 30 小时未来调试。
 
 ---
 
-## After Analysis: Immediate Actions
+## 调试后：立即行动
 
-**IMPORTANT**: After completing the analysis above, you MUST immediately:
+**重要**：完成上述分析后，必须立即：
 
-1. **Update spec/guides** - Don't just list TODOs, actually update the relevant files:
-   - If it's a cross-platform issue → update `cross-platform-thinking-guide.md`
-   - If it's a cross-layer issue → update `cross-layer-thinking-guide.md`
-   - If it's a code reuse issue → update `code-reuse-thinking-guide.md`
-   - If it's domain-specific → update `backend/*.md` or `frontend/*.md`
+1. **更新 spec/guides** — 不要只是列出 TODO，要实际更新相关文件：
+   - 如果是跨平台问题 → 更新 `cross-layer-thinking-guide.md`
+   - 如果是跨层问题 → 更新 `cross-layer-thinking-guide.md`
+   - 如果是代码复用问题 → 更新 `code-reuse-thinking-guide.md`
+   - 如果是领域特定 → 更新 `backend/*.md` 或 `frontend/*.md`
 
-2. **Sync templates** - After updating `.trellis/spec/`, sync to `src/templates/markdown/spec/`
+2. **同步模板** — 更新 `.trellis/spec/` 后，同步到 `src/templates/markdown/spec/`
 
-3. **Commit the spec updates** - This is the primary output, not just the analysis text
+3. **提交 spec 更新** — 这是主要输出，不只是分析文本
 
-> **The analysis is worthless if it stays in chat. The value is in the updated specs.**
+> **分析如果没有留在聊天中就没有价值。价值在于更新的规范。**
+
+---
+
+## 红牌警告 - 停并遵循流程
+
+如果发现自己想：
+- "先快速修复，回头调查"
+- "就试试改 X 看看能不能修"
+- "加多个变更，跑测试"
+- "跳过测试，我手动验证"
+- "这大概是 X，我修一下"
+- "我不完全理解但这可能行"
+- **"再试一次修复"（已经试了 2+ 次）**
+- **每次修复在不同地方揭示新问题**
+
+**所有这些意味着：停。回到 Phase 1。**
+
+**如果 3+ 修复失败：** 质疑架构（见 Phase 4.5）
+
+---
+
+## 常见辩解
+
+| 借口 | 现实 |
+|------|------|
+| "问题简单，不需要流程" | 简单问题也有根因。流程对简单问题很快。 |
+| "紧急，没时间走流程" | 系统化调试比猜测-检查循环更快。 |
+| "先试试这个，回头调查" | 第一次修复设置了模式。从一开始就做对。 |
+| "修完再写测试确认" | 未测试的修复不持久。测试先行证明。 |
+| "一次修多个节省时间" | 无法隔离什么有效。会造成新 bug。 |
+| "参考太长，我适配一下" | 部分理解保证有 bug。完整阅读。 |
+| "我看到问题了，我来修" | 看到症状 ≠ 理解根因。 |
+| "再试一次修复"（2+ 次后） | 3+ 次失败 = 架构问题。质疑模式，不要继续修。 |
+
+---
+
+## 快速参考
+
+| 阶段 | 关键活动 | 成功标准 |
+|------|----------|----------|
+| **1. 根因** | 读错误、复现、检查变更、收集证据 | 理解什么 + 为什么 |
+| **2. 模式** | 找工作示例、对比 | 识别差异 |
+| **3. 假设** | 形成理论、最小测试 | 确认或新假设 |
+| **4. 实现** | 创建测试、修复、验证 | Bug 解决、测试通过 |
+
+---
+
+## 当过程揭示"无根因"时
+
+如果系统调查揭示问题确实是环境的、时间相关的或外部的：
+
+1. 你已完成流程
+2. 记录你调查了什么
+3. 实现适当的处理（重试、超时、错误消息）
+4. 添加监控/日志供未来调查
+
+**但是：** 95% 的"无根因"案例是调查不完整。

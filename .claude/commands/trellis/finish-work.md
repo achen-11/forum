@@ -1,153 +1,268 @@
-# Finish Work - Pre-Commit Checklist
+# Finish Work - Pre-Commit Checklist & Verification
 
-Before submitting or committing, use this checklist to ensure work completeness.
+在提交或提交之前，使用此检查清单确保工作完整性，并遵循"先证据再声称"原则。
 
-**Timing**: After code is written and tested, before commit
+**时机**：代码编写和测试完成后、提交之前
 
 ---
 
-## Checklist
+## 铁律
 
-### 1. Code Quality
+```
+未经新鲜验证证据，不得声称完成
+```
+
+在声称任何状态或表达满意之前，必须先运行验证命令并确认输出。
+
+违反此规则等于撒谎，不是效率。
+
+---
+
+## Gate 函数（必须执行）
+
+```
+在声称任何状态之前：
+
+1. 识别：什么命令能证明这个声明？
+2. 运行：执行完整命令（新鲜的、完整的）
+3. 读取：完整输出，检查退出码，计数失败
+4. 验证：输出是否确认声明？
+   - 如果否：陈述实际状态及证据
+   - 如果是：陈述声明及证据
+5. 然后：才能声称结果
+
+跳过任何步骤 = 撒谎，不是验证
+```
+
+---
+
+## 常见失败
+
+| 声明 | 需要 | 不充分 |
+|------|------|--------|
+| 测试通过 | 测试命令输出：0 失败 | 上次运行、"应该通过" |
+| Linter 干净 | Linter 输出：0 错误 | 部分检查、外推 |
+| 构建成功 | 构建命令：exit 0 | Linter 通过、日志看起来对 |
+| Bug 修复 | 测试原始症状：通过 | 代码改了，假设修好了 |
+| 回归测试有效 | 红-绿循环验证 | 测试一次通过 |
+| Agent 完成 | VCS diff 显示变更 | Agent 报告"成功" |
+| 需求满足 | 逐项检查清单 | 测试通过 |
+
+---
+
+## 红牌警告 - 停
+
+如果发现自己：
+- 使用"应该"、"可能"、"似乎"
+- 在验证之前表达满意（"太棒了！"、"完美！"、"完成了！"等）
+- 准备提交/推送/PR 而无验证
+- 信任 Agent 成功报告
+- 依赖部分验证
+- 想"就这一次"
+- 累了想结束工作
+- **任何暗示成功但未运行验证的措辞**
+
+---
+
+## 辩解预防
+
+| 借口 | 现实 |
+|------|------|
+| "现在应该可以了" | 运行验证 |
+| "我有信心" | 信心 ≠ 证据 |
+| "就这一次" | 没有例外 |
+| "Linter 通过了" | Linter ≠ 编译器 |
+| "Agent 说成功了" | 独立验证 |
+| "我累了" | 疲惫 ≠ 借口 |
+| "部分检查就够了" | 部分证明不了什么 |
+| "措辞不同规则不适用" | 精神重于字面 |
+
+---
+
+## 检查清单
+
+### 1. 代码质量
 
 ```bash
-# Must pass
+# 必须通过
 pnpm lint
 pnpm type-check
 pnpm test
 ```
 
-- [ ] `pnpm lint` passes with 0 errors?
-- [ ] `pnpm type-check` passes with no type errors?
-- [ ] Tests pass?
-- [ ] No `console.log` statements (use logger)?
-- [ ] No non-null assertions (the `x!` operator)?
-- [ ] No `any` types?
+- [ ] `pnpm lint` 通过，0 错误？
+- [ ] `pnpm type-check` 通过，无类型错误？
+- [ ] 测试通过？
+- [ ] 无 `console.log` 语句（使用 logger）？
+- [ ] 无 non-null 断言（`x!` 操作符）？
+- [ ] 无 `any` 类型？
 
-### 1.5. Test Coverage
+### 2. 测试覆盖
 
-Check if your change needs new or updated tests (see `.trellis/spec/unit-test/conventions.md`):
+检查变更是否需要新的或更新的测试（见 `.trellis/spec/unit-test/conventions.md`）：
 
-- [ ] New pure function → unit test added?
-- [ ] Bug fix → regression test added in `test/regression.test.ts`?
-- [ ] Changed init/update behavior → integration test added/updated?
-- [ ] No logic change (text/data only) → no test needed
+- [ ] 新纯函数 → 添加了单元测试？
+- [ ] Bug 修复 → 在 `test/regression.test.ts` 添加了回归测试？
+- [ ] 变更 init/update 行为 → 添加/更新了集成测试？
+- [ ] 无逻辑变更（仅文本/数据）→ 不需要测试
 
-### 2. Code-Spec Sync
+### 3. Code-Spec 同步
 
-**Code-Spec Docs**:
-- [ ] Does `.trellis/spec/backend/` need updates?
-  - New patterns, new modules, new conventions
-- [ ] Does `.trellis/spec/frontend/` need updates?
-  - New components, new hooks, new patterns
-- [ ] Does `.trellis/spec/guides/` need updates?
-  - New cross-layer flows, lessons from bugs
+**Code-Spec 文档**：
+- [ ] `.trellis/spec/backend/` 需要更新吗？
+  - 新模式、新模块、新惯例
+- [ ] `.trellis/spec/frontend/` 需要更新吗？
+  - 新组件、新 hooks、新模式
+- [ ] `.trellis/spec/guides/` 需要更新吗？
+  - 新跨层流程、bug 教训
 
-**Key Question**: 
-> "If I fixed a bug or discovered something non-obvious, should I document it so future me (or others) won't hit the same issue?"
+**关键问题**：
+> "如果我修复了一个 bug 或发现了非显而易见的东西，我应该记录它以便未来的我（或其他人）不会遇到同样的问题吗？"
 
-If YES -> Update the relevant code-spec doc.
+如果是 → 更新相关 code-spec 文档。
 
-### 2.5. Code-Spec Hard Block (Infra/Cross-Layer)
+### 3.5 Code-Spec 硬阻塞（基础设施/跨层）
 
-If this change touches infra or cross-layer contracts, this is a blocking checklist:
+如果变更涉及基础设施或跨层契约，这是阻塞性检查清单：
 
-- [ ] Spec content is executable (real signatures/contracts), not principle-only text
-- [ ] Includes file path + command/API name + payload field names
-- [ ] Includes validation and error matrix
-- [ ] Includes Good/Base/Bad cases
-- [ ] Includes required tests and assertion points
+- [ ] Spec 内容是可执行的（真实签名/契约），而非仅原则性文本
+- [ ] 包含文件路径 + 命令/API 名称 + payload 字段名
+- [ ] 包含验证和错误矩阵
+- [ ] 包含 Good/Base/Bad 案例
+- [ ] 包含所需测试和断言点
 
-**Block Rule**:
-In pipeline mode, the finish agent will automatically detect and execute spec updates when gaps are found.
-If running this checklist manually, ensure spec sync is complete before committing — run `/trellis:update-spec` if needed.
+**阻塞规则**：
+在 pipeline 模式中，finish agent 会自动检测并在发现缺口时执行 spec 更新。
+如果手动运行此检查清单，确保 spec 同步在提交之前完成——如需要，运行 `/trellis:update-spec`。
 
-### 3. API Changes
+### 4. API 变更
 
-If you modified API endpoints:
+如果修改了 API 端点：
 
-- [ ] Input schema updated?
-- [ ] Output schema updated?
-- [ ] API documentation updated?
-- [ ] Client code updated to match?
+- [ ] 输入 schema 更新了？
+- [ ] 输出 schema 更新了？
+- [ ] API 文档更新了？
+- [ ] 客户端代码更新匹配了？
 
-### 4. Database Changes
+### 5. 数据库变更
 
-If you modified database schema:
+如果修改了数据库 schema：
 
-- [ ] Migration file created?
-- [ ] Schema file updated?
-- [ ] Related queries updated?
-- [ ] Seed data updated (if applicable)?
+- [ ] Migration 文件创建了？
+- [ ] Schema 文件更新了？
+- [ ] 相关查询更新了？
+- [ ] Seed 数据更新了（如适用）？
 
-### 5. Cross-Layer Verification
+### 6. 跨层验证
 
-If the change spans multiple layers:
+如果变更跨越多层：
 
-- [ ] Data flows correctly through all layers?
-- [ ] Error handling works at each boundary?
-- [ ] Types are consistent across layers?
-- [ ] Loading states handled?
+- [ ] 数据流正确通过所有层？
+- [ ] 每个边界错误处理正常？
+- [ ] 类型在各层一致？
+- [ ] 加载状态处理了？
 
-### 6. Manual Testing
+### 7. 手动测试
 
-- [ ] Feature works in browser/app?
-- [ ] Edge cases tested?
-- [ ] Error states tested?
-- [ ] Works after page refresh?
+- [ ] 功能在浏览器/app 中正常？
+- [ ] 边缘案例测试了？
+- [ ] 错误状态测试了？
+- [ ] 页面刷新后正常？
 
 ---
 
-## Quick Check Flow
+## 快速检查流程
 
 ```bash
-# 1. Code checks
+# 1. 代码检查
 pnpm lint && pnpm type-check
 
-# 2. View changes
+# 2. 查看变更
 git status
 git diff --name-only
 
-# 3. Based on changed files, check relevant items above
+# 3. 基于变更的文件，检查上方相关项目
 ```
 
 ---
 
-## Common Oversights
+## 验证模式
 
-| Oversight | Consequence | Check |
-|-----------|-------------|-------|
-| Code-spec docs not updated | Others don't know the change | Check .trellis/spec/ |
-| Spec text is abstract only | Easy regressions in infra/cross-layer changes | Require signature/contract/matrix/cases/tests |
-| Migration not created | Schema out of sync | Check db/migrations/ |
-| Types not synced | Runtime errors | Check shared types |
-| Tests not updated | False confidence | Run full test suite |
-| Console.log left in | Noisy production logs | Search for console.log |
+**测试：**
+```
+✅ [运行测试命令] [看到：34/34 通过] "所有测试通过"
+❌ "应该通过了" / "看起来正确"
+```
+
+**回归测试（TDD 红-绿）：**
+```
+✅ 写 → 运行（通过）→ 还原 → 运行（必须失败）→ 恢复 → 运行（通过）
+❌ "我写了回归测试"（无红-绿验证）
+```
+
+**构建：**
+```
+✅ [运行构建] [看到：exit 0] "构建通过"
+❌ "Linter 通过了"（linter 不检查编译）
+```
+
+**需求：**
+```
+✅ 重读计划 → 创建检查清单 → 验证每项 → 报告缺口或完成
+❌ "测试通过，阶段完成"
+```
+
+**Agent 委托：**
+```
+✅ Agent 报告成功 → 检查 VCS diff → 验证变更 → 报告实际状态
+❌ 信任 Agent 报告
+```
 
 ---
 
-## Relationship to Other Commands
+## 常见遗漏
+
+| 遗漏 | 后果 | 检查 |
+|------|------|------|
+| Code-spec 文档未更新 | 其他人不知道变更 | 检查 .trellis/spec/ |
+| Spec 文本仅抽象 | 基础设施/跨层变更易回归 | 要求签名/契约/矩阵/案例/测试 |
+| Migration 未创建 | Schema 不同步 | 检查 db/migrations/ |
+| 类型未同步 | 运行时错误 | 检查共享类型 |
+| 测试未更新 | 虚假信心 | 运行完整测试套件 |
+| Console.log 留下 | 生产日志嘈杂 | 搜索 console.log |
+
+---
+
+## 与其他命令的关系
 
 ```
-Development Flow:
-  Write code -> Test -> /trellis:finish-work -> git commit -> /trellis:record-session
-                          |                              |
-                   Ensure completeness              Record progress
-                   
-Debug Flow:
-  Hit bug -> Fix -> /trellis:break-loop -> Knowledge capture
+开发流程：
+  写代码 -> 测试 -> /trellis:finish-work -> git commit -> /trellis:record-session
+                            |                              |
+                     确保完整性                    记录进度
+
+调试流程：
+  遇到 bug -> 修复 -> /trellis:break-loop -> 知识捕获
                        |
-                  Deep analysis
+                  深度分析
 ```
 
-- `/trellis:finish-work` - Check work completeness (this command)
-- `/trellis:record-session` - Record session and commits
-- `/trellis:break-loop` - Deep analysis after debugging
+- `/trellis:finish-work` - 检查工作完整性（此命令）
+- `/trellis:record-session` - 记录会话和提交
+- `/trellis:break-loop` - 调试后深度分析
 
 ---
 
-## Core Principle
+## 核心原则
 
-> **Delivery includes not just code, but also documentation, verification, and knowledge capture.**
+> **交付不仅包括代码，还包括文档、验证和知识捕获。**
 
-Complete work = Code + Docs + Tests + Verification
+完整工作 = 代码 + 文档 + 测试 + 验证
+
+**先证据再声称。**
+
+没有验证的捷径。
+
+运行命令。读取输出。然后才能声称结果。
+
+这是不可妥协的。
